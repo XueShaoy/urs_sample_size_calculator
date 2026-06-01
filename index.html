@@ -318,22 +318,33 @@
                 <div id="m1-monitoring">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>总体观测目标 p <span class="tooltip tip-right" data-tip="预期的比例值，如满意率、转化率等。填写0-100之间的百分比。">ⓘ</span></label>
-                            <div class="input-suffix" data-suffix="%"><input type="number" id="m1-p" placeholder="例如: 70" step="0.1" min="0" max="100"></div>
+                            <label>同时观测指标数 k <span class="tooltip tip-right" data-tip="同时检验多个指标时，整体误报率会膨胀。k>1 时自动应用 Bonferroni 校正，将每个指标的显著性水平压缩为 α/k，使整体误报率不超过 α。">ⓘ</span></label>
+                            <input type="number" id="m1-k" value="1" step="1" min="1" max="20" oninput="updateMetricInputs()">
                         </div>
                         <div class="form-group">
-                            <label>总体波动精度 δ (MDE) <span class="tooltip" data-tip="希望检测到的最小波动。如想检测1%的波动（70%→71%），填1。">ⓘ</span></label>
-                            <div class="input-suffix" data-suffix="%"><input type="number" id="m1-delta" placeholder="例如: 1" step="0.1" min="0"></div>
-                        </div>
-                        <div class="form-group">
-                            <label>显著性水平 α <span class="tooltip" data-tip="假阳性率。α=0.2表示20%概率误报。常用0.05-0.2。">ⓘ</span></label>
-                            <input type="number" id="m1-alpha" value="0.2" step="0.01" min="0.01" max="0.5">
+                            <label>显著性水平 α <span class="tooltip" data-tip="假阳性率。α=0.2表示20%概率误报。常用0.05-0.2。多指标时自动校正为 α/k。">ⓘ</span></label>
+                            <input type="number" id="m1-alpha" value="0.2" step="0.01" min="0.01" max="0.5" oninput="updateBonferroniInfo()">
                         </div>
                         <div class="form-group">
                             <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。0.6表示60%概率检测到。常用0.6-0.8。">ⓘ</span></label>
                             <input type="number" id="m1-power" value="0.6" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
+                    <!-- k=1: 单指标输入 -->
+                    <div id="m1-single-metric" style="margin-top:16px;">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label>总体观测目标 p <span class="tooltip tip-right" data-tip="预期的比例值，如满意率、转化率等。填写0-100之间的百分比。">ⓘ</span></label>
+                                <div class="input-suffix" data-suffix="%"><input type="number" id="m1-p" placeholder="例如: 70" step="0.1" min="0" max="100"></div>
+                            </div>
+                            <div class="form-group">
+                                <label>总体波动精度 δ (MDE) <span class="tooltip" data-tip="希望检测到的最小波动。如想检测1%的波动（70%→71%），填1。">ⓘ</span></label>
+                                <div class="input-suffix" data-suffix="%"><input type="number" id="m1-delta" placeholder="例如: 1" step="0.1" min="0"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- k>1: 多指标输入 -->
+                    <div id="m1-multi-metrics" style="display:none; margin-top:16px;"></div>
                 </div>
                 
                 <!-- AB测试 - 比例指标 -->
@@ -741,6 +752,65 @@ function calcSE_ab_mean(sigmaA, nA, sigmaB, nB) {
 
 function calcCI(se, conf) { return Z_CI[conf] * se; }
 
+// ===== 多指标 Bonferroni =====
+function updateMetricInputs() {
+    const k = Math.max(1, parseInt(document.getElementById('m1-k').value) || 1);
+    const single = document.getElementById('m1-single-metric');
+    const multi = document.getElementById('m1-multi-metrics');
+    const pageCard = document.getElementById('m1-page-card');
+
+    if (k === 1) {
+        single.style.display = 'block';
+        multi.style.display = 'none';
+        if (pageCard) pageCard.style.display = 'block';
+        return;
+    }
+
+    single.style.display = 'none';
+    multi.style.display = 'block';
+    if (pageCard) pageCard.style.display = 'none';
+
+    // Preserve existing input values before re-render
+    const existing = [];
+    for (let i = 1; i <= 20; i++) {
+        const pEl = document.getElementById(`m1-metric-${i}-p`);
+        const dEl = document.getElementById(`m1-metric-${i}-delta`);
+        if (!pEl) break;
+        existing.push({ p: pEl.value, delta: dEl ? dEl.value : '' });
+    }
+
+    let rows = '';
+    for (let i = 1; i <= k; i++) {
+        const prev = existing[i - 1] || { p: '', delta: '' };
+        rows += `<div style="display:flex;align-items:center;gap:16px;background:var(--bg-secondary);border-radius:10px;padding:14px 16px;border:1px solid var(--border-color);">
+            <span style="font-size:0.8rem;color:var(--text-muted);min-width:36px;font-family:'JetBrains Mono',monospace;">指标 ${i}</span>
+            <div class="form-group" style="flex:1;margin:0;">
+                <label style="font-size:0.78rem;">观测目标 p</label>
+                <div class="input-suffix" data-suffix="%"><input type="number" id="m1-metric-${i}-p" value="${prev.p}" placeholder="例如: 70" step="0.1" min="0" max="100"></div>
+            </div>
+            <div class="form-group" style="flex:1;margin:0;">
+                <label style="font-size:0.78rem;">波动精度 δ (MDE)</label>
+                <div class="input-suffix" data-suffix="%"><input type="number" id="m1-metric-${i}-delta" value="${prev.delta}" placeholder="例如: 1" step="0.1" min="0"></div>
+            </div>
+        </div>`;
+    }
+
+    const alpha = parseFloat(document.getElementById('m1-alpha').value) || 0.2;
+    const alphaAdj = (alpha / k).toFixed(4);
+    multi.innerHTML = `<div style="display:flex;flex-direction:column;gap:12px;">${rows}</div>
+        <div id="m1-bonferroni-info" style="margin-top:12px;font-size:0.8rem;color:var(--text-muted);background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);border-radius:8px;padding:10px 14px;">
+            Bonferroni 校正：α_adj = ${alpha} / ${k} = <strong style="color:var(--accent-cyan);">${alphaAdj}</strong>，整体误报率 ≤ ${alpha}
+        </div>`;
+}
+
+function updateBonferroniInfo() {
+    const info = document.getElementById('m1-bonferroni-info');
+    if (!info) return;
+    const k = Math.max(1, parseInt(document.getElementById('m1-k').value) || 1);
+    const alpha = parseFloat(document.getElementById('m1-alpha').value) || 0.2;
+    info.innerHTML = `Bonferroni 校正：α_adj = ${alpha} / ${k} = <strong style="color:var(--accent-cyan);">${(alpha / k).toFixed(4)}</strong>，整体误报率 ≤ ${alpha}`;
+}
+
 // ===== UI =====
 function switchScenario(s) {
     scenario = s;
@@ -951,11 +1021,14 @@ function calcMode1() {
     
     if (scenario === 'monitoring') {
         // 长期观测 - 比例
-        const p = (parseFloat(document.getElementById('m1-p').value) || 0) / 100;
-        const delta = (parseFloat(document.getElementById('m1-delta').value) || 0) / 100;
         const alpha = parseFloat(document.getElementById('m1-alpha').value) || 0.2;
         const power = parseFloat(document.getElementById('m1-power').value) || 0.6;
-        
+        const k = Math.max(1, parseInt(document.getElementById('m1-k').value) || 1);
+
+        if (k === 1) {
+        const p = (parseFloat(document.getElementById('m1-p').value) || 0) / 100;
+        const delta = (parseFloat(document.getElementById('m1-delta').value) || 0) / 100;
+
         if (p <= 0 || p >= 1) { alert('请输入有效的 p 值 (0-100%)'); return; }
         if (delta <= 0) { alert('请输入有效的 MDE δ'); return; }
 
@@ -963,19 +1036,70 @@ function calcMode1() {
         const za = normInv(1 - alpha/2), zb = normInv(power);
         const n = calcN_single(p, delta, alpha, power);
         const verifyMDE = calcMDE_single(p, n, alpha, power);
-        
+
         html = `<div class="result-summary">
             <div class="result-label">最小样本量（单组）</div>
             <div class="result-value">${n.toLocaleString()}</div>
             <div class="result-note">p=${(p*100).toFixed(1)}%, MDE=${(delta*100).toFixed(2)}%, α=${alpha}, Power=${power}</div>
         </div>`;
-        
+
         formula = `<strong>公式：</strong>n = Z² × p(1-p) / δ²<br>
             <strong>其中：</strong>Z = Z<sub>α/2</sub> + Z<sub>β</sub> = ${za.toFixed(3)} + ${zb.toFixed(3)} = ${z.toFixed(3)}<br>
             <strong>计算：</strong>n = ${z.toFixed(3)}² × ${p.toFixed(4)} × ${(1-p).toFixed(4)} / ${delta.toFixed(4)}² = ${n.toLocaleString()}<br>
             <strong>验证：</strong>MDE = ${z.toFixed(3)} × √(${p.toFixed(4)}×${(1-p).toFixed(4)}/${n}) = ${(verifyMDE*100).toFixed(4)}%`;
-        
+
         renderMode1PageTable_Monitoring(alpha, power, delta);
+
+        } else {
+            // 多指标 Bonferroni 校正
+            const alphaAdj = alpha / k;
+            const z = getZ(alphaAdj, power);
+            const za = normInv(1 - alphaAdj/2), zb = normInv(power);
+
+            const metrics = [];
+            for (let i = 1; i <= k; i++) {
+                const pEl = document.getElementById(`m1-metric-${i}-p`);
+                const dEl = document.getElementById(`m1-metric-${i}-delta`);
+                if (!pEl || !dEl) { alert('请先设置指标数再计算'); return; }
+                const p = (parseFloat(pEl.value) || 0) / 100;
+                const delta = (parseFloat(dEl.value) || 0) / 100;
+                if (p <= 0 || p >= 1) { alert(`请输入指标 ${i} 的有效 p 值 (0-100%)`); return; }
+                if (delta <= 0) { alert(`请输入指标 ${i} 的有效 δ 值`); return; }
+                metrics.push({ i, p, delta, n: calcN_single(p, delta, alphaAdj, power) });
+            }
+
+            const maxN = Math.max(...metrics.map(m => m.n));
+
+            const tableRows = metrics.map(m =>
+                `<tr>
+                    <td>指标 ${m.i}</td>
+                    <td>${(m.p*100).toFixed(1)}%</td>
+                    <td>${(m.delta*100).toFixed(2)}%</td>
+                    <td class="highlight-cell">${m.n.toLocaleString()}</td>
+                    <td>${m.n === maxN ? '<span style="color:var(--accent-orange)">决定最终样本量</span>' : ''}</td>
+                </tr>`
+            ).join('');
+
+            html = `<div class="result-summary">
+                <div class="result-label">最终所需样本量（取各指标中最大值）</div>
+                <div class="result-value">${maxN.toLocaleString()}</div>
+                <div class="result-note">k=${k} 个指标，Bonferroni 校正后 α_adj = ${alpha}/${k} = ${alphaAdj.toFixed(4)}，Power=${power}</div>
+            </div>
+            <div class="table-container" style="margin-top:16px;">
+                <table class="results-table">
+                    <thead><tr><th>指标</th><th>p</th><th>δ (MDE)</th><th>所需样本量</th><th>备注</th></tr></thead>
+                    <tbody>${tableRows}</tbody>
+                </table>
+            </div>`;
+
+            formula = `<strong>Bonferroni 校正：</strong>同时检验 k=${k} 个指标，α_adj = α/k = ${alpha}/${k} = ${alphaAdj.toFixed(4)}<br>
+                <strong>Z 值：</strong>Z<sub>α_adj/2</sub> + Z<sub>β</sub> = ${za.toFixed(3)} + ${zb.toFixed(3)} = ${z.toFixed(3)}<br>
+                <strong>各指标公式：</strong>n = Z² × p(1-p) / δ²<br>
+                <strong>最终样本量：</strong>max(n₁…n<sub>${k}</sub>) = ${maxN.toLocaleString()}`;
+
+            document.getElementById('m1-page-title').style.display = 'none';
+            document.getElementById('m1-table-container').style.display = 'none';
+        }
         
     } else if (metricType === 'proportion') {
         // AB测试 - 比例
@@ -1294,6 +1418,8 @@ function resetMode(mode) {
         ['m1-p', 'm1-delta', 'm1-ab-pA', 'm1-ab-pB', 'm1-ab-delta', 'm1-ab-nA', 'm1-mean-delta', 'm1-mean-sigmaA', 'm1-mean-sigmaB', 'm1-mean-nA'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         ['m1-alpha', 'm1-ab-alpha', 'm1-mean-alpha'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '0.2'; });
         ['m1-power', 'm1-ab-power', 'm1-mean-power'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '0.6'; });
+        const kEl = document.getElementById('m1-k');
+        if (kEl) { kEl.value = '1'; updateMetricInputs(); }
     } else {
         ['m2-p', 'm2-n', 'm2-ab-pA', 'm2-ab-pB', 'm2-ab-nA', 'm2-ab-nB', 'm2-mean-sigmaA', 'm2-mean-sigmaB', 'm2-mean-nA', 'm2-mean-nB'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         ['m2-alpha', 'm2-ab-alpha', 'm2-mean-alpha'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '0.2'; });
