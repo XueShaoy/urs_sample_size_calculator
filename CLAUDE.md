@@ -31,7 +31,7 @@ Open `index.html` directly in a browser — no server required. To test changes,
 ## Key Constants
 
 - `MIN_SAMPLE = 200` — floor for all computed sample sizes
-- Default α = 0.2, default power = 0.6 (less conservative than typical academic defaults)
+- Default α = 0.2, default power = 0.7 (less conservative than typical academic defaults)
 - `Z_CI = { 0.90: 1.645, 0.95: 1.960, 0.99: 2.576 }` — used to render CI half-widths at three confidence levels
 
 ## Non-obvious Implementation Details

@@ -342,8 +342,8 @@
                             <input type="number" id="m1-alpha" value="0.2" step="0.01" min="0.01" max="0.5" oninput="updateBonferroniInfo()">
                         </div>
                         <div class="form-group">
-                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。0.6表示60%概率检测到。常用0.6-0.8。">ⓘ</span></label>
-                            <input type="number" id="m1-power" value="0.6" step="0.01" min="0.5" max="0.99">
+                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。0.7表示70%概率检测到。常用0.6-0.8。">ⓘ</span></label>
+                            <input type="number" id="m1-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
                     <!-- k=1: 单指标输入 -->
@@ -375,8 +375,8 @@
                             <input type="number" id="m1-ab-alpha" value="0.2" step="0.01" min="0.01" max="0.5">
                         </div>
                         <div class="form-group">
-                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。0.6表示60%概率检测到。">ⓘ</span></label>
-                            <input type="number" id="m1-ab-power" value="0.6" step="0.01" min="0.5" max="0.99">
+                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。0.7表示70%概率检测到。">ⓘ</span></label>
+                            <input type="number" id="m1-ab-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
                     <div class="two-column">
@@ -421,8 +421,8 @@
                             <input type="number" id="m1-mean-alpha" value="0.2" step="0.01" min="0.01" max="0.5">
                         </div>
                         <div class="form-group">
-                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。0.6表示60%概率检测到。">ⓘ</span></label>
-                            <input type="number" id="m1-mean-power" value="0.6" step="0.01" min="0.5" max="0.99">
+                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。0.7表示70%概率检测到。">ⓘ</span></label>
+                            <input type="number" id="m1-mean-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
                     <div class="two-column">
@@ -522,7 +522,7 @@
                         </div>
                         <div class="form-group">
                             <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。常用0.6-0.8。">ⓘ</span></label>
-                            <input type="number" id="m2-power" value="0.6" step="0.01" min="0.5" max="0.99">
+                            <input type="number" id="m2-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
                 </div>
@@ -536,7 +536,7 @@
                         </div>
                         <div class="form-group">
                             <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。">ⓘ</span></label>
-                            <input type="number" id="m2-ab-power" value="0.6" step="0.01" min="0.5" max="0.99">
+                            <input type="number" id="m2-ab-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
                     <div class="two-column">
@@ -582,7 +582,7 @@
                         </div>
                         <div class="form-group">
                             <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。">ⓘ</span></label>
-                            <input type="number" id="m2-mean-power" value="0.6" step="0.01" min="0.5" max="0.99">
+                            <input type="number" id="m2-mean-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
                     <div class="two-column">
@@ -1038,7 +1038,7 @@ function calcMode1() {
     if (scenario === 'monitoring') {
         // 长期观测 - 比例
         const alpha = parseFloat(document.getElementById('m1-alpha').value) || 0.2;
-        const power = parseFloat(document.getElementById('m1-power').value) || 0.6;
+        const power = parseFloat(document.getElementById('m1-power').value) || 0.7;
         const k = Math.max(1, parseInt(document.getElementById('m1-k').value) || 1);
 
         if (k === 1) {
@@ -1124,7 +1124,7 @@ function calcMode1() {
         let pB = document.getElementById('m1-ab-sync-p').checked ? pA : (parseFloat(document.getElementById('m1-ab-pB').value) || 0) / 100;
         const nA = parseInt(document.getElementById('m1-ab-nA').value) || 0;
         const alpha = parseFloat(document.getElementById('m1-ab-alpha').value) || 0.2;
-        const power = parseFloat(document.getElementById('m1-ab-power').value) || 0.6;
+        const power = parseFloat(document.getElementById('m1-ab-power').value) || 0.7;
         
         if (pA <= 0 || pA >= 1 || pB <= 0 || pB >= 1) { alert('请输入有效的 p 值 (0-100%)'); return; }
         if (delta <= 0) { alert('请输入有效的 MDE δ'); return; }
@@ -1175,7 +1175,7 @@ function calcMode1() {
         let sigmaB = document.getElementById('m1-mean-sync-sigma').checked ? sigmaA : (parseFloat(document.getElementById('m1-mean-sigmaB').value) || 0);
         const nA = parseInt(document.getElementById('m1-mean-nA').value) || 0;
         const alpha = parseFloat(document.getElementById('m1-mean-alpha').value) || 0.2;
-        const power = parseFloat(document.getElementById('m1-mean-power').value) || 0.6;
+        const power = parseFloat(document.getElementById('m1-mean-power').value) || 0.7;
         
         if (sigmaA <= 0 || sigmaB <= 0) { alert('请输入有效的标准差 σ'); return; }
         if (delta <= 0) { alert('请输入有效的 MDE δ'); return; }
@@ -1275,7 +1275,7 @@ function calcMode2() {
         const p = (parseFloat(document.getElementById('m2-p').value) || 0) / 100;
         const n = parseInt(document.getElementById('m2-n').value) || 0;
         const alpha = parseFloat(document.getElementById('m2-alpha').value) || 0.2;
-        const power = parseFloat(document.getElementById('m2-power').value) || 0.6;
+        const power = parseFloat(document.getElementById('m2-power').value) || 0.7;
         
         const pages = getSelectedPages(2);
         const z = getZ(alpha, power);
@@ -1317,7 +1317,7 @@ function calcMode2() {
         const nA = parseInt(document.getElementById('m2-ab-nA').value) || 0;
         const nB = parseInt(document.getElementById('m2-ab-nB').value) || 0;
         const alpha = parseFloat(document.getElementById('m2-ab-alpha').value) || 0.2;
-        const power = parseFloat(document.getElementById('m2-ab-power').value) || 0.6;
+        const power = parseFloat(document.getElementById('m2-ab-power').value) || 0.7;
         
         const pages = getSelectedPages(2);
         const z = getZ(alpha, power);
@@ -1360,7 +1360,7 @@ function calcMode2() {
         const nA = parseInt(document.getElementById('m2-mean-nA').value) || 0;
         const nB = parseInt(document.getElementById('m2-mean-nB').value) || 0;
         const alpha = parseFloat(document.getElementById('m2-mean-alpha').value) || 0.2;
-        const power = parseFloat(document.getElementById('m2-mean-power').value) || 0.6;
+        const power = parseFloat(document.getElementById('m2-mean-power').value) || 0.7;
         
         if (sigmaA <= 0 || sigmaB <= 0) { alert('请输入有效的标准差 σ'); return; }
         if (nA <= 0 || nB <= 0) { alert('请输入两组样本量'); return; }
@@ -1433,13 +1433,13 @@ function resetMode(mode) {
     if (mode === 1) {
         ['m1-p', 'm1-delta', 'm1-ab-pA', 'm1-ab-pB', 'm1-ab-delta', 'm1-ab-nA', 'm1-mean-delta', 'm1-mean-sigmaA', 'm1-mean-sigmaB', 'm1-mean-nA'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         ['m1-alpha', 'm1-ab-alpha', 'm1-mean-alpha'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '0.2'; });
-        ['m1-power', 'm1-ab-power', 'm1-mean-power'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '0.6'; });
+        ['m1-power', 'm1-ab-power', 'm1-mean-power'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '0.7'; });
         const kEl = document.getElementById('m1-k');
         if (kEl) { kEl.value = '1'; updateMetricInputs(); }
     } else {
         ['m2-p', 'm2-n', 'm2-ab-pA', 'm2-ab-pB', 'm2-ab-nA', 'm2-ab-nB', 'm2-mean-sigmaA', 'm2-mean-sigmaB', 'm2-mean-nA', 'm2-mean-nB'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
         ['m2-alpha', 'm2-ab-alpha', 'm2-mean-alpha'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '0.2'; });
-        ['m2-power', 'm2-ab-power', 'm2-mean-power'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '0.6'; });
+        ['m2-power', 'm2-ab-power', 'm2-mean-power'].forEach(id => { const el = document.getElementById(id); if (el) el.value = '0.7'; });
     }
     PAGES.forEach(p => {
         const pg = document.getElementById(`m${mode}-pg-${p}`);
