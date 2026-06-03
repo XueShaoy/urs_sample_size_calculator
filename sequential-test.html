@@ -617,7 +617,6 @@ function compute() {
         <strong>与固定样本量的差异：</strong>${bType === 'obf' ? 'O\'Brien-Fleming 最终分析边界接近（略高于）固定样本量检验，检验力损失极小（&lt;1%）。' : 'Pocock 各次分析边界相等，最终分析边界高于固定样本量检验（更保守），需增加总样本量约 10-30% 以补偿。'}
     `;
 
-    const sides2 = tail === 'two' ? 2 : 1;
     const finalBoundary = looks[K-1].z;
     const finalP = (sides2 * (1 - normCDF(finalBoundary))).toFixed(5);
     document.getElementById('interp-text').innerHTML = `
