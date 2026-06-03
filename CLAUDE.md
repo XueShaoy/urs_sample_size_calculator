@@ -6,10 +6,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A multi-tool statistical analysis suite (Chinese-language UI) for the URS Data Science team. Deployed via GitHub Pages at `urs-ds.xueshaoyang.com`.
 
-**Site structure — three self-contained HTML files, no build system, no dependencies:**
-- `index.html` — Landing page linking to the two tools
+**Site structure — four self-contained HTML files, no build system, no dependencies:**
+- `index.html` — Landing page linking to all four tools
 - `sample-size-calculator.html` — Sample size / MDE calculator
 - `significance-test.html` — Significance testing tool (z proportion tests)
+- `power-analysis.html` — Statistical power vs. experiment duration charts
+- `sequential-test.html` — Sequential testing / early stopping boundaries
 
 Open any file directly in a browser to develop — no server required.
 
@@ -31,7 +33,7 @@ Key JavaScript structure:
 
 ### Key Constants
 
-- `MIN_SAMPLE = 200` — floor for all computed sample sizes
+- `getMinSample()` — reads the `#min-sample` input (default 200) and returns the current floor for all computed sample sizes; formerly a hardcoded constant `MIN_SAMPLE = 200`
 - Default α = 0.2, default power = 0.7 (less conservative than typical academic defaults)
 - `Z_CI = { 0.90: 1.645, 0.95: 1.960, 0.99: 2.576 }` — used to render CI half-widths at three confidence levels
 
@@ -45,7 +47,7 @@ Key JavaScript structure:
 
 **Dynamic page config HTML** — The LDBOM per-page input panels do not exist in the static HTML. They are generated at runtime by `initPageConfigs()`, which is called on `DOMContentLoaded` and on every `switchScenario()`. When modifying per-page input fields, edit the template strings inside `initPageConfigs()`.
 
-**AB Mode 1 asymmetry** — In Mode 1 AB tests, nA is always a user-supplied input; only nB is calculated. The formula `nB = VarB / [(δ/Z)² - VarA/nA]` requires nA first. If nA is large enough that `VarA/nA ≥ (δ/Z)²`, the result clamps to `MIN_SAMPLE` with a warning.
+**AB Mode 1 asymmetry** — In Mode 1 AB tests, nA is always a user-supplied input; only nB is calculated. The formula `nB = VarB / [(δ/Z)² - VarA/nA]` requires nA first. If nA is large enough that `VarA/nA ≥ (δ/Z)²`, the result clamps to `getMinSample()` with a warning.
 
 **Per-page MDE scaling** — When page configs are active, each page's effective MDE is `pageDelta = totalDelta / page.w`. Heavier-weighted pages are held to a tighter precision requirement.
 
@@ -65,9 +67,10 @@ Two test types (switched via top-left toggle):
 
 Key features:
 - **Multiple comparison corrections**: Bonferroni, Holm, Benjamini-Hochberg (BH), and none — applied via `adjustPValues()`
-- **Observed power**: `calcPower()` computes post-hoc power using the observed effect size, displayed per row with color coding (≥80% green, <50% orange)
+- **Odds Ratio column**: `calcOR(pNumerator, pDenominator)` computes OR = (pN/(1−pN)) / (pD/(1−pD)); displayed in table and CSV; returns `null` (renders "—") when p=0 or p=1
+- **Observed power**: `calcPower()` computes post-hoc power using the observed effect size, displayed per row with color coding (≥80% green, <50% orange); column tooltip and formula section include the Hoenig & Heisey (2001) caveat that observed power is redundant with p-value
 - **Forest plot**: SVG rendered inline showing point estimates with 95% CI bars
-- **CSV export**: downloads results including corrected p-values, power, and a metadata footer; `downloadResults()`
+- **CSV export**: downloads results including OR, corrected p-values, power, and a metadata footer; `downloadResults()`
 - **Template download**: `downloadTemplate()` generates a correctly-formatted CSV for the active test type
 
 Mock CSV files in the repo root serve as template examples:
@@ -95,3 +98,21 @@ Summary stat cards: days to reach target power, power at max days, MDE at max da
 Key functions: `calcPower()`, `calcMDE()`, `buildPowerCurve()`, `buildMDECurve()`, `renderChart()`, `findCrossDay()`, `findDropDay()`, `run()`.
 
 **Statistical note** — `calcMDE()` for AB uses the approximation SE = √(2p₀(1−p₀)/n), treating pA ≈ pB ≈ p₀. `calcPower()` uses the exact pB = p₀ + δ. The two charts are mathematically consistent: the crossing day on both charts is the same value.
+
+## sequential-test.html
+
+Computes alpha-spending early stopping boundaries for sequential / interim analysis. Lets users determine whether a running experiment can be stopped early without inflating the overall Type I error rate.
+
+Inputs: planned total N, optional daily traffic (to show days per look), K interim analyses, α, boundary type, test direction, and optionally the current accumulated n and z-statistic for a live stop/continue decision.
+
+Two boundary types via `spendOBF()` and `spendPocock()`:
+- **O'Brien-Fleming**: `α*(t) = 2×[1−Φ(z_{α/2}/√t)]` — early looks are very conservative, final boundary ≈ fixed-horizon z; minimal power loss
+- **Pocock**: `α*(t) = α×ln(1+(e−1)×t)` — equal boundaries at every look; final boundary is higher than fixed-horizon, requires ~10–30% more total N
+
+Key functions: `computeBoundaries(alpha, K, spendFn, tail)` returns an array of look objects `{k, t, cumSpent, deltaAlpha, z, boundaryP}`; `renderBoundaryChart()` draws the SVG boundary plot; `compute()` is the main entry point.
+
+**Incremental α allocation** — At look k (t = k/K), cumulative α spent = `spendFn(α, t)`. The incremental budget for look k is `Δα_k = cumSpent(t_k) − cumSpent(t_{k-1})`, and the critical z-value is `normInv(1 − Δα_k / sides)`. This is the Lan-DeMets (1983) approximation — adequate for planning but not a substitute for exact simulation-based boundaries in formal trial design.
+
+**Current-state decision** — When the user fills in current n and current z, `compute()` finds the nearest planned look by minimising `|t_observed − t_k|` and compares `|z_current|` against that look's boundary. A stop/continue banner and a horizontal z-line on the chart are shown.
+
+**UI guide** — A collapsible "工具说明" card above the parameters panel (toggled by `toggleGuide()`) explains the peeking problem, when to use the tool, the four-step workflow, and a side-by-side comparison of the two boundary types. A "结果解读" panel inside the results section (rendered dynamically into `#interp-text`) explains how to read each output element and lists three critical caveats (no mid-experiment look additions, no retroactive application, winner's curse on early-stop effect estimates).

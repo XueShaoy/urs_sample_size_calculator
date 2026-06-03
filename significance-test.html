@@ -760,6 +760,13 @@ function renderForest(results) {
     document.getElementById('forest').innerHTML = svg;
 }
 
+function calcOR(pNumerator, pDenominator) {
+    if (pDenominator <= 0 || pDenominator >= 1 || pNumerator <= 0 || pNumerator >= 1) return null;
+    return (pNumerator * (1 - pDenominator)) / (pDenominator * (1 - pNumerator));
+}
+function fmtOR(or) { return or === null ? '—' : or.toFixed(3); }
+function orCls(or) { return or === null ? '' : (or > 1 ? 'success-cell' : (or < 1 ? 'warning-cell' : '')); }
+
 function clip(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 function escapeXml(s) { return String(s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c])); }
 function fmtP(p) { return p < 0.0001 ? '<0.0001' : p.toFixed(4); }
@@ -771,11 +778,14 @@ function renderTable(results, alpha, tail) {
     const corrected = results.length && results[0].corrected;
     const adjHead = corrected ? '<th>校正后 p</th>' : '';
     const adjCell = r => corrected ? `<td>${fmtP(r.pAdj)}</td>` : '';
-    const pwHead = '<th>事后功效 <span class="tooltip tip-left tip-down" data-tip="observed power：以观测效应为真实效应，在当前样本量与 α 下检测到该效应的概率。功效偏低时不显著结果可能源于样本量不足。≥80% 绿色，&lt;50% 橙色。">ⓘ</span></th>';
+    const pwHead = '<th>事后功效 <span class="tooltip tip-left tip-down" data-tip="observed power：以观测效应为真实效应，在当前样本量与 α 下检测到该效应的概率。⚠️ 注意：事后功效由 p 值唯一确定，不提供额外信息——p 值显著时功效必然高，反之必然低（Hoenig &amp; Heisey, 2001）。">ⓘ</span></th>';
     const pwCell = r => `<td class="${powerCls(r.power)}">${fmtPower(r.power)}</td>`;
+    const orHead = '<th>OR <span class="tooltip tip-left tip-down" data-tip="比值比（Odds Ratio）：衡量两组事件发生的优势之比。单样本：OR = (p̂÷(1−p̂)) ÷ (p₀÷(1−p₀))；双样本：OR = (p₂÷(1−p₂)) ÷ (p₁÷(1−p₁))。OR=1 无差异，OR&gt;1 绿色（正向），OR&lt;1 橙色（负向）。p 较小时 OR≈RR；p 较大时 OR 会高估相对差异。">ⓘ</span></th>';
+    const orCellSingle = r => { const or = calcOR(r.phat, r.p0); return `<td class="${orCls(or)}">${fmtOR(or)}</td>`; };
+    const orCellTwo = r => { const or = calcOR(r.p2, r.p1); return `<td class="${orCls(or)}">${fmtOR(or)}</td>`; };
     if (testType === 'single') {
         document.getElementById('res-thead').innerHTML =
-            `<tr><th>指标</th><th>观测 p̂</th><th>基准 p₀</th><th>差异</th><th>${ciLabel}</th><th>z 值</th><th>p 值</th>${adjHead}${pwHead}<th>结论</th></tr>`;
+            `<tr><th>指标</th><th>观测 p̂</th><th>基准 p₀</th><th>差异</th><th>${ciLabel}</th>${orHead}<th>z 值</th><th>p 值</th>${adjHead}${pwHead}<th>结论</th></tr>`;
         document.getElementById('res-tbody').innerHTML = results.map(r => {
             return `<tr>
                 <td class="metric-cell">${escapeHtml(r.metric)}</td>
@@ -783,6 +793,7 @@ function renderTable(results, alpha, tail) {
                 <td>${(r.p0 * 100).toFixed(2)}%</td>
                 <td>${r.est >= 0 ? '+' : ''}${(r.est * 100).toFixed(2)}%</td>
                 <td>[${(r.ciLow * 100).toFixed(2)}%, ${(r.ciHigh * 100).toFixed(2)}%]</td>
+                ${orCellSingle(r)}
                 <td>${r.z.toFixed(3)}</td>
                 <td>${fmtP(r.p)}</td>
                 ${adjCell(r)}
@@ -792,7 +803,7 @@ function renderTable(results, alpha, tail) {
         }).join('');
     } else {
         document.getElementById('res-thead').innerHTML =
-            `<tr><th>指标</th><th>A 比例</th><th>B 比例</th><th>差异(A−B)</th><th>${ciLabel}</th><th>z 值</th><th>p 值</th>${adjHead}${pwHead}<th>结论</th></tr>`;
+            `<tr><th>指标</th><th>A 比例</th><th>B 比例</th><th>差异(A−B)</th><th>${ciLabel}</th>${orHead}<th>z 值</th><th>p 值</th>${adjHead}${pwHead}<th>结论</th></tr>`;
         document.getElementById('res-tbody').innerHTML = results.map(r => {
             return `<tr>
                 <td class="metric-cell">${escapeHtml(r.metric)}</td>
@@ -800,6 +811,7 @@ function renderTable(results, alpha, tail) {
                 <td>${(r.p2 * 100).toFixed(2)}%</td>
                 <td>${r.est >= 0 ? '+' : ''}${(r.est * 100).toFixed(2)}%</td>
                 <td>[${(r.ciLow * 100).toFixed(2)}%, ${(r.ciHigh * 100).toFixed(2)}%]</td>
+                ${orCellTwo(r)}
                 <td>${r.z.toFixed(3)}</td>
                 <td>${fmtP(r.p)}</td>
                 ${adjCell(r)}
@@ -835,7 +847,8 @@ function renderFormula(alpha, tail) {
             p 值：${pTxt}；${sigTxt}`;
     }
     html += `<br><strong>事后功效 (observed power, 1−β)</strong><br>
-        以观测效应为真实效应，在当前样本量与 α 下检测到该效应的概率。功效偏低时，不显著的结果更可能源于样本量不足而非确无效应。`;
+        以观测效应为真实效应，在当前样本量与 α 下检测到该效应的概率。功效偏低时，不显著的结果更可能源于样本量不足而非确无效应。<br>
+        <span style="color:var(--accent-orange);font-size:0.88em;">⚠️ 注意：事后功效由 p 值唯一确定，不提供超出 p 值的额外信息（Hoenig &amp; Heisey, 2001）——p 值显著时事后功效必然高，反之亦然。建议将此列视为参考，而非独立解读。</span>`;
     html += correctionFormula(correction);
     document.getElementById('formula').innerHTML = html;
 }
@@ -875,26 +888,28 @@ function downloadResults() {
 
     const rows = [];
     if (tt === 'single') {
-        const head = ['指标', '成功数x', '样本量n', '观测比例p_hat', '基准p0', '差异', `CI下限(${ciPct}%)`, `CI上限(${ciPct}%)`, 'z值', 'p值'];
+        const head = ['指标', '成功数x', '样本量n', '观测比例p_hat', '基准p0', '差异', `CI下限(${ciPct}%)`, `CI上限(${ciPct}%)`, 'OR', 'z值', 'p值'];
         if (corrected) head.push('校正后p');
         head.push('事后功效');
         head.push('结论');
         rows.push(head);
         results.forEach(r => {
-            const row = [r.metric, r.raw.x, r.raw.n, pct(r.phat), pct(r.p0), pct(r.est), pct(r.ciLow), pct(r.ciHigh), r.z.toFixed(4), r.p.toExponential(4)];
+            const or = calcOR(r.phat, r.p0);
+            const row = [r.metric, r.raw.x, r.raw.n, pct(r.phat), pct(r.p0), pct(r.est), pct(r.ciLow), pct(r.ciHigh), fmtOR(or), r.z.toFixed(4), r.p.toExponential(4)];
             if (corrected) row.push(r.pAdj.toExponential(4));
             row.push(fmtPower(r.power));
             row.push(sigTxt(r));
             rows.push(row);
         });
     } else {
-        const head = ['指标', 'A成功数x1', 'A样本量n1', 'B成功数x2', 'B样本量n2', 'A比例', 'B比例', '差异(A-B)', `CI下限(${ciPct}%)`, `CI上限(${ciPct}%)`, 'z值', 'p值'];
+        const head = ['指标', 'A成功数x1', 'A样本量n1', 'B成功数x2', 'B样本量n2', 'A比例', 'B比例', '差异(A-B)', `CI下限(${ciPct}%)`, `CI上限(${ciPct}%)`, 'OR(B/A)', 'z值', 'p值'];
         if (corrected) head.push('校正后p');
         head.push('事后功效');
         head.push('结论');
         rows.push(head);
         results.forEach(r => {
-            const row = [r.metric, r.raw.x1, r.raw.n1, r.raw.x2, r.raw.n2, pct(r.p1), pct(r.p2), pct(r.est), pct(r.ciLow), pct(r.ciHigh), r.z.toFixed(4), r.p.toExponential(4)];
+            const or = calcOR(r.p2, r.p1);
+            const row = [r.metric, r.raw.x1, r.raw.n1, r.raw.x2, r.raw.n2, pct(r.p1), pct(r.p2), pct(r.est), pct(r.ciLow), pct(r.ciHigh), fmtOR(or), r.z.toFixed(4), r.p.toExponential(4)];
             if (corrected) row.push(r.pAdj.toExponential(4));
             row.push(fmtPower(r.power));
             row.push(sigTxt(r));

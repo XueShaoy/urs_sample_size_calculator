@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>序贯检验 · URS DS Tools</title>
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KVLVZCEG29"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-KVLVZCEG29');
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #141a22;
+            --bg-tertiary: #1c242e;
+            --bg-card: #151c25;
+            --border-color: #2a3441;
+            --text-primary: #e8eaed;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --accent-red: #ef4444;
+            --shadow: 0 4px 32px rgba(0,0,0,0.5);
+            --glow-blue: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary); color: var(--text-primary);
+            min-height: 100vh; line-height: 1.7;
+            background-image: radial-gradient(ellipse at 10% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
+                              radial-gradient(ellipse at 90% 80%, rgba(139,92,246,0.06) 0%, transparent 50%);
+        }
+        .container { max-width: 1100px; margin: 0 auto; padding: 48px 24px; }
+
+        .home-link {
+            position: fixed; top: 20px; right: 20px; z-index: 1000;
+            display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px;
+            border-radius: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); color: var(--text-secondary); font-size: 0.85rem;
+            font-weight: 500; text-decoration: none; transition: all 0.25s;
+        }
+        .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
+
+        header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+        h1 {
+            font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .subtitle { color: var(--text-secondary); font-size: 1rem; }
+
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px;
+            padding: 32px; margin-bottom: 24px; position: relative;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
+        }
+        .card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+        .card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+        .card-icon.blue { background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(6,182,212,0.2)); }
+        .card-icon.purple { background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.18)); }
+        .card-title { font-size: 1.15rem; font-weight: 600; }
+        .card-desc { font-size: 0.8rem; color: var(--text-secondary); margin-top: 3px; }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; }
+        label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+        .tooltip { position: relative; cursor: help; color: var(--accent-cyan); display: inline-flex; }
+        .tooltip::after {
+            content: attr(data-tip); position: absolute;
+            bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+            background: var(--bg-primary); color: var(--text-primary);
+            padding: 12px 16px; border-radius: 10px; font-size: 0.75rem; font-weight: 400;
+            opacity: 0; visibility: hidden; transition: all 0.15s; z-index: 99999;
+            border: 1px solid var(--border-color); width: 260px;
+            white-space: normal; text-align: left; line-height: 1.6;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6); pointer-events: none;
+        }
+        .tooltip:hover::after { opacity: 1; visibility: visible; }
+        .tooltip.tip-down::after { bottom: auto; top: calc(100% + 8px); }
+        .tooltip.tip-left::after { left: auto; right: 0; transform: none; }
+
+        input[type="number"], select {
+            background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px;
+            padding: 12px 16px; color: var(--text-primary); font-size: 0.95rem;
+            font-family: 'JetBrains Mono', monospace; width: 100%;
+        }
+        select { font-family: 'Noto Sans SC', sans-serif; cursor: pointer; }
+        input:focus, select:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        input::placeholder { color: var(--text-muted); }
+
+        .btn {
+            padding: 14px 32px; border: none; border-radius: 12px; font-size: 0.95rem;
+            font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.25s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--glow-blue); }
+        .action-row { display: flex; gap: 14px; margin-top: 28px; justify-content: flex-end; }
+
+        .results-section { display: none; }
+        .results-section.visible { display: block; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+        .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
+        .stat-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 22px; }
+        .stat-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
+        .stat-value { font-size: 1.5rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; color: var(--accent-cyan); }
+        .stat-value.warn { color: var(--accent-orange); }
+        .stat-value.good { color: var(--accent-green); }
+        .stat-value.stop { color: var(--accent-red); }
+        .stat-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; }
+
+        .chart-wrap { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+        .chart-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
+        .chart-subtitle { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 16px; }
+        .chart-wrap svg { width: 100%; height: auto; display: block; }
+
+        .table-wrap { margin-bottom: 24px; overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th {
+            background: var(--bg-secondary); color: var(--text-secondary); padding: 10px 14px;
+            text-align: left; font-weight: 600; font-size: 0.78rem; text-transform: uppercase;
+            letter-spacing: 0.04em; border-bottom: 1px solid var(--border-color);
+        }
+        td { padding: 10px 14px; border-bottom: 1px solid rgba(42,52,65,0.6); font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; }
+        tr:hover td { background: rgba(59,130,246,0.04); }
+        .highlight-row td { background: rgba(59,130,246,0.08); }
+        .stop-row td { background: rgba(239,68,68,0.08); }
+        .cell-stop { color: var(--accent-red); font-weight: 600; }
+        .cell-continue { color: var(--accent-green); }
+        .cell-look { color: var(--text-muted); }
+
+        .decision-banner {
+            display: none; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px;
+            display: flex; align-items: flex-start; gap: 14px;
+        }
+        .decision-banner.stop { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); }
+        .decision-banner.continue { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); }
+        .decision-banner.hidden { display: none; }
+        .decision-icon { font-size: 1.8rem; flex-shrink: 0; }
+        .decision-title { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
+        .decision-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
+
+        .formula-section { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 24px; }
+        .formula-label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; font-weight: 500; }
+        .formula-text { font-size: 0.82rem; color: var(--text-secondary); line-height: 2; }
+
+        .section-divider { border: none; border-top: 1px solid var(--border-color); margin: 28px 0; }
+
+        .watermark {
+            position: fixed; bottom: 16px; right: 20px;
+            font-size: 0.7rem; color: var(--text-muted); opacity: 0.5;
+            letter-spacing: 0.02em; pointer-events: none; z-index: 100;
+        }
+
+        .watermark {
+            position: fixed; bottom: 16px; right: 20px;
+            font-size: 0.7rem; color: var(--text-muted); opacity: 0.5;
+            letter-spacing: 0.02em; pointer-events: none; z-index: 100;
+        }
+
+        /* Guide styles */
+        .info-card { border-color: rgba(139,92,246,0.2); }
+        .guide-section p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; }
+        .guide-title { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(139,92,246,0.2); }
+        .guide-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+        .guide-item { background: var(--bg-secondary); border-radius: 10px; padding: 14px 16px; }
+        .guide-item-title { font-size: 0.82rem; font-weight: 600; margin-bottom: 8px; color: var(--text-primary); }
+        .guide-item ul { padding-left: 16px; }
+        .guide-item li { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; }
+        .guide-steps { display: flex; flex-direction: column; gap: 10px; }
+        .guide-step { display: flex; gap: 14px; align-items: flex-start; }
+        .step-num { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+        .guide-step div { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.7; }
+
+        @media (max-width: 768px) {
+            .home-link { top: 14px; right: 10px; padding: 8px 12px; font-size: 0.78rem; }
+            .container { padding: 72px 16px 48px; }
+            h1 { font-size: 1.8rem; }
+            .guide-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="watermark">URS数据科学团队 © 2026</div>
+    <a class="home-link" href="index.html">← 返回首页</a>
+
+    <div class="container">
+        <header>
+            <h1>序贯检验</h1>
+            <p class="subtitle">α 消费函数早停边界 · 解决多次窥探导致的 I 类错误膨胀</p>
+        </header>
+
+        <!-- 工具说明 -->
+        <div class="card info-card">
+            <div class="card-header" style="margin-bottom:0;padding-bottom:0;border-bottom:none;cursor:pointer;" onclick="toggleGuide()">
+                <div class="card-icon purple">📖</div>
+                <div style="flex:1;">
+                    <div class="card-title">工具说明 · 什么时候用，怎么用</div>
+                    <div class="card-desc">点击展开 / 收起</div>
+                </div>
+                <span id="guide-arrow" style="color:var(--text-muted);font-size:1.1rem;transition:transform 0.2s;">▼</span>
+            </div>
+            <div id="guide-body" style="display:none;margin-top:24px;padding-top:20px;border-top:1px solid var(--border-color);">
+
+                <div class="guide-section">
+                    <div class="guide-title">为什么需要序贯检验</div>
+                    <p>在 AB 实验或长期观测中，每次"查看"数据都在做一次假设检验。<strong>如果进行多次查看并以"显著就停"为规则，即使实验完全无效，I 类错误率（误报率）也会远超设定的 α</strong>（例如每隔一天查看共 20 次，α=0.05 时实际误报率会膨胀到约 25%）。</p>
+                    <p style="margin-top:8px;">序贯检验通过 <strong>α 消费函数（alpha-spending function）</strong> 预先将总 α 预算分配给每次分析，使得无论在哪个节点停止实验，<strong>整体 I 类错误率始终不超过 α</strong>。</p>
+                </div>
+
+                <div class="guide-section" style="margin-top:20px;">
+                    <div class="guide-title">典型使用场景</div>
+                    <div class="guide-grid">
+                        <div class="guide-item">
+                            <div class="guide-item-title">✅ 适合使用</div>
+                            <ul>
+                                <li>实验运行周期长，需要提前发现显著效果</li>
+                                <li>实验样本量大、成本高，希望能早停节省资源</li>
+                                <li>运营或业务有时间窗口压力，需要实时监控</li>
+                                <li>已知计划样本量 N（可先用样本量计算器估算）</li>
+                            </ul>
+                        </div>
+                        <div class="guide-item">
+                            <div class="guide-item-title">❌ 不适合使用</div>
+                            <ul>
+                                <li>事后分析（实验结束后才想追溯中期边界）</li>
+                                <li>未预先注册停止规则就已经开始随意查看</li>
+                                <li>实验周期极短（2–3 天），无中期查看必要</li>
+                                <li>数据样本量无法事先估算（边界无从计算）</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="guide-section" style="margin-top:20px;">
+                    <div class="guide-title">使用流程（四步）</div>
+                    <div class="guide-steps">
+                        <div class="guide-step"><span class="step-num">1</span><div><strong>实验前</strong>：用样本量计算器确定计划总样本量 N，决定中期查看次数 K 和边界类型，将停止规则写入实验方案并存档。</div></div>
+                        <div class="guide-step"><span class="step-num">2</span><div><strong>本工具</strong>：输入 N、K、α、边界类型，点击"计算停止边界"，获取每个节点的边界 |z| 值。</div></div>
+                        <div class="guide-step"><span class="step-num">3</span><div><strong>实验中</strong>：按计划在第 n₁, n₂, … nₖ 样本量时查看数据，计算当前 z 统计量，与对应节点边界比较。</div></div>
+                        <div class="guide-step"><span class="step-num">4</span><div><strong>决策</strong>：若 |z| ≥ 边界值 → 宣告显著，停止实验；若所有节点均未超过 → 最终分析（第 K 次）用最终边界做结论。</div></div>
+                    </div>
+                </div>
+
+                <div class="guide-section" style="margin-top:20px;">
+                    <div class="guide-title">两种边界的区别</div>
+                    <div class="guide-grid">
+                        <div class="guide-item">
+                            <div class="guide-item-title">O'Brien-Fleming（推荐）</div>
+                            <ul>
+                                <li>早期边界很高，不易早停（保守）</li>
+                                <li>随时间推移边界逐步降低，最终接近正常 z 值</li>
+                                <li>检验力损失极小（&lt;1%），几乎不需要额外样本量</li>
+                                <li>适合大多数 AB 实验场景</li>
+                            </ul>
+                        </div>
+                        <div class="guide-item">
+                            <div class="guide-item-title">Pocock</div>
+                            <ul>
+                                <li>各次分析边界相同，早期即有较大早停机会</li>
+                                <li>最终分析边界<strong>高于</strong>固定样本检验（需更多样本）</li>
+                                <li>检验力损失约 10–20%，需增加总样本量补偿</li>
+                                <li>适合实验早期就可能出现强信号的场景</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- 参数设置 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon blue">⚙️</div>
+                <div>
+                    <div class="card-title">实验参数</div>
+                    <div class="card-desc">设定实验规模与假设，计算各中期分析的停止边界</div>
+                </div>
+            </div>
+
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>计划总样本量 N
+                        <span class="tooltip tip-down" data-tip="实验计划收集的最大样本量（全组合计）。达到此量时进行最终分析。可使用样本量计算器估算。">ⓘ</span>
+                    </label>
+                    <input type="number" id="total-n" min="1" step="1" placeholder="e.g. 10000">
+                </div>
+                <div class="form-group">
+                    <label>日均流量
+                        <span class="tooltip tip-down" data-tip="每天进入实验的总用户数，用于将中期分析节点换算为天数。可选填，不影响边界计算。">ⓘ</span>
+                    </label>
+                    <input type="number" id="daily-n" min="1" step="1" placeholder="可选，e.g. 1000">
+                </div>
+                <div class="form-group">
+                    <label>中期分析次数 K
+                        <span class="tooltip tip-down" data-tip="实验期间计划进行的中期查看次数（含最终分析）。增加分析次数会使每次边界更宽松，但总体 I 类错误率维持在 α。通常 3–5 次。">ⓘ</span>
+                    </label>
+                    <input type="number" id="k-looks" min="2" max="20" step="1" value="5">
+                </div>
+                <div class="form-group">
+                    <label>显著性水平 α
+                        <span class="tooltip tip-down" data-tip="整个实验（含所有中期分析）的总 I 类错误率上限。α 消费函数会将这些 α 合理分配给各次分析，使总消耗不超过此值。">ⓘ</span>
+                    </label>
+                    <select id="alpha">
+                        <option value="0.05" selected>0.05</option>
+                        <option value="0.10">0.10</option>
+                        <option value="0.20">0.20</option>
+                        <option value="0.01">0.01</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>边界类型
+                        <span class="tooltip tip-down" data-tip="O'Brien-Fleming：早期边界宽松（很难早停），后期收紧趋近正常 z 值。保守且检验力损失小，最常用。Pocock：各次边界相等（消费均匀）。早停机会更多，但最终分析边界高于正常值。">ⓘ</span>
+                    </label>
+                    <select id="boundary-type">
+                        <option value="obf" selected>O'Brien-Fleming</option>
+                        <option value="pocock">Pocock</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>检验方向
+                        <span class="tooltip tip-down" data-tip="双侧：检测任意方向的差异（最常用）。单侧：只检测一个方向的改善（需有充分先验理由）。">ⓘ</span>
+                    </label>
+                    <select id="tail">
+                        <option value="two" selected>双侧</option>
+                        <option value="one">单侧</option>
+                    </select>
+                </div>
+            </div>
+
+            <hr class="section-divider">
+
+            <div class="card-title" style="font-size:1rem;margin-bottom:16px;color:var(--text-secondary);">当前分析状态（可选）</div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>当前已收集样本量 n
+                        <span class="tooltip tip-down" data-tip="截至本次中期分析，实验已累计收集的样本量。用于确定当前处于哪个信息分数节点。">ⓘ</span>
+                    </label>
+                    <input type="number" id="current-n" min="1" step="1" placeholder="可选，e.g. 4000">
+                </div>
+                <div class="form-group">
+                    <label>当前 z 统计量
+                        <span class="tooltip tip-down" data-tip="当前分析计算得到的 z 检验统计量（注意符号）。与对应节点的边界值比较，判断是否可以早停。">ⓘ</span>
+                    </label>
+                    <input type="number" id="current-z" step="0.001" placeholder="可选，e.g. 2.5">
+                </div>
+            </div>
+
+            <div class="action-row">
+                <button class="btn btn-primary" onclick="compute()">计算停止边界</button>
+            </div>
+        </div>
+
+        <!-- 结果 -->
+        <div class="results-section" id="results">
+
+            <!-- 决策横幅 -->
+            <div class="decision-banner hidden" id="decision-banner">
+                <div class="decision-icon" id="decision-icon"></div>
+                <div>
+                    <div class="decision-title" id="decision-title"></div>
+                    <div class="decision-desc" id="decision-desc"></div>
+                </div>
+            </div>
+
+            <!-- 摘要卡片 -->
+            <div class="summary-grid" id="summary-grid"></div>
+
+            <!-- 边界图 -->
+            <div class="chart-wrap">
+                <div class="chart-title">停止边界 vs 中期分析节点</div>
+                <div class="chart-subtitle" id="chart-subtitle"></div>
+                <svg id="boundary-chart" viewBox="0 0 560 260" style="overflow:visible;"></svg>
+            </div>
+
+            <!-- 边界明细表 -->
+            <div class="table-wrap">
+                <table>
+                    <thead id="boundary-thead"></thead>
+                    <tbody id="boundary-tbody"></tbody>
+                </table>
+            </div>
+
+            <!-- 公式说明 -->
+            <div class="formula-section">
+                <div class="formula-label">方法说明</div>
+                <div class="formula-text" id="formula-text"></div>
+            </div>
+
+            <!-- 结果解读 -->
+            <div class="formula-section" style="margin-top:16px;background:rgba(139,92,246,0.06);border-color:rgba(139,92,246,0.2);">
+                <div class="formula-label" style="color:var(--accent-purple);">结果解读指南</div>
+                <div class="formula-text" id="interp-text"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+function erf(x) {
+    const sign = x < 0 ? -1 : 1;
+    x = Math.abs(x);
+    const a1=0.254829592, a2=-0.284496736, a3=1.421413741, a4=-1.453152027, a5=1.061405429, p=0.3275911;
+    const t = 1 / (1 + p * x);
+    const y = 1 - (((((a5*t+a4)*t+a3)*t+a2)*t+a1)*t) * Math.exp(-x*x);
+    return sign * y;
+}
+function normCDF(z) { return 0.5 * (1 + erf(z / Math.SQRT2)); }
+function normInv(p) {
+    if (p <= 0 || p >= 1) return p <= 0 ? -Infinity : Infinity;
+    const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+    const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+    const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+    const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+    const pLow = 0.02425;
+    let q, r;
+    if (p < pLow) {
+        q = Math.sqrt(-2 * Math.log(p));
+        return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+    } else if (p <= 1 - pLow) {
+        q = p - 0.5; r = q * q;
+        return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+    } else {
+        q = Math.sqrt(-2 * Math.log(1 - p));
+        return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+    }
+}
+
+function spendOBF(alpha, t) {
+    if (t <= 0) return 0;
+    if (t >= 1) return alpha;
+    const sides = 2;
+    const za = normInv(1 - alpha / sides);
+    return sides * (1 - normCDF(za / Math.sqrt(t)));
+}
+function spendPocock(alpha, t) {
+    if (t <= 0) return 0;
+    if (t >= 1) return alpha;
+    return alpha * Math.log(1 + (Math.E - 1) * t);
+}
+
+function computeBoundaries(alpha, K, spendFn, tail) {
+    const sides = tail === 'two' ? 2 : 1;
+    const looks = [];
+    let prevSpent = 0;
+    for (let k = 1; k <= K; k++) {
+        const t = k / K;
+        const cumSpent = spendFn(alpha, t);
+        const deltaAlpha = Math.max(cumSpent - prevSpent, 1e-10);
+        const critP = deltaAlpha / sides;
+        const z = normInv(1 - critP);
+        const boundaryP = sides * (1 - normCDF(z));
+        looks.push({ k, t, cumSpent, deltaAlpha, z, boundaryP });
+        prevSpent = cumSpent;
+    }
+    return looks;
+}
+
+function compute() {
+    const N = parseInt(document.getElementById('total-n').value) || 0;
+    const dailyN = parseFloat(document.getElementById('daily-n').value) || 0;
+    const K = Math.min(20, Math.max(2, parseInt(document.getElementById('k-looks').value) || 5));
+    const alpha = parseFloat(document.getElementById('alpha').value) || 0.05;
+    const bType = document.getElementById('boundary-type').value;
+    const tail = document.getElementById('tail').value;
+    const currentN = parseFloat(document.getElementById('current-n').value) || 0;
+    const currentZ = parseFloat(document.getElementById('current-z').value);
+    const hasCurrentZ = document.getElementById('current-z').value.trim() !== '';
+
+    if (N <= 0) { alert('请输入计划总样本量 N'); return; }
+
+    const spendFn = bType === 'obf' ? (a, t) => spendOBF(a, t) : (a, t) => spendPocock(a, t);
+    const looks = computeBoundaries(alpha, K, spendFn, tail);
+
+    // Determine current look
+    let currentLook = null;
+    if (currentN > 0 && N > 0) {
+        const t = Math.min(currentN / N, 1);
+        let bestIdx = 0;
+        for (let i = 0; i < looks.length; i++) {
+            if (Math.abs(looks[i].t - t) < Math.abs(looks[bestIdx].t - t)) bestIdx = i;
+        }
+        currentLook = looks[bestIdx];
+    }
+
+    const boundary = currentLook ? currentLook.z : looks[K-1].z;
+
+    // Decision
+    let decision = null;
+    if (hasCurrentZ && currentLook) {
+        const absZ = Math.abs(currentZ);
+        decision = absZ >= boundary ? 'stop' : 'continue';
+    }
+
+    // Summary cards
+    const finalZ = looks[K-1].z;
+    const firstZ = looks[0].z;
+    const summaryEl = document.getElementById('summary-grid');
+    const sides = tail === 'two' ? 2 : 1;
+    summaryEl.innerHTML = `
+        <div class="stat-card">
+            <div class="stat-label">最终分析边界 (z)</div>
+            <div class="stat-value good">${finalZ.toFixed(3)}</div>
+            <div class="stat-note">第 ${K} 次分析（t=1），对应 p<${(sides*(1-normCDF(finalZ))).toFixed(4)}</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">首次分析边界 (z)</div>
+            <div class="stat-value warn">${firstZ.toFixed(3)}</div>
+            <div class="stat-note">第 1 次分析（t=${(1/K).toFixed(2)}），需超过此值才能早停</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">每次节点样本量</div>
+            <div class="stat-value">${Math.round(N/K).toLocaleString()}</div>
+            <div class="stat-note">总量 ${N.toLocaleString()} / ${K} 次分析${dailyN > 0 ? '，约 ' + Math.round(N/K/dailyN) + ' 天/次' : ''}</div>
+        </div>
+        ${hasCurrentZ && currentLook ? `<div class="stat-card">
+            <div class="stat-label">当前决策</div>
+            <div class="stat-value ${decision === 'stop' ? 'stop' : 'good'}">${decision === 'stop' ? '停止' : '继续'}</div>
+            <div class="stat-note">|z|=${Math.abs(currentZ).toFixed(3)} ${decision === 'stop' ? '≥' : '<'} 边界 ${boundary.toFixed(3)}</div>
+        </div>` : ''}
+    `;
+
+    // Decision banner
+    const bannerEl = document.getElementById('decision-banner');
+    if (hasCurrentZ && currentLook && decision) {
+        bannerEl.className = `decision-banner ${decision}`;
+        document.getElementById('decision-icon').textContent = decision === 'stop' ? '🛑' : '▶️';
+        document.getElementById('decision-title').textContent = decision === 'stop'
+            ? `建议停止实验（第 ${currentLook.k} 次中期分析）`
+            : `继续实验（第 ${currentLook.k} 次中期分析）`;
+        document.getElementById('decision-desc').innerHTML = decision === 'stop'
+            ? `当前 |z| = ${Math.abs(currentZ).toFixed(3)} 已超过本次分析边界 ${boundary.toFixed(3)}（累计消费 α = ${(currentLook.cumSpent*100).toFixed(3)}%），可按预设规则宣告显著并停止实验。`
+            : `当前 |z| = ${Math.abs(currentZ).toFixed(3)} 未超过本次分析边界 ${boundary.toFixed(3)}，尚无充分证据停止实验，继续观测至下一节点（第 ${Math.min(currentLook.k+1, K)} 次分析，n ≈ ${Math.round(N*(Math.min(currentLook.k+1,K))/K).toLocaleString()}）。`;
+    } else {
+        bannerEl.className = 'decision-banner hidden';
+    }
+
+    // Chart
+    renderBoundaryChart(looks, currentLook, hasCurrentZ ? currentZ : null, tail, N, dailyN);
+
+    // Chart subtitle
+    document.getElementById('chart-subtitle').textContent =
+        `${bType === 'obf' ? 'O\'Brien-Fleming' : 'Pocock'} · ${tail === 'two' ? '双侧' : '单侧'} · α=${alpha} · K=${K} 次分析`;
+
+    // Table
+    const hasDays = dailyN > 0;
+    const theadEl = document.getElementById('boundary-thead');
+    const tbodyEl = document.getElementById('boundary-tbody');
+    theadEl.innerHTML = `<tr>
+        <th>分析节点</th>
+        <th>信息分数 t</th>
+        <th>累计样本量</th>
+        ${hasDays ? '<th>约第N天</th>' : ''}
+        <th>消费 α (累计)</th>
+        <th>本次 Δα</th>
+        <th>边界 |z|</th>
+        <th>对应 p 值</th>
+        ${hasCurrentZ && currentLook ? '<th>当前状态</th>' : ''}
+    </tr>`;
+
+    const sides2 = tail === 'two' ? 2 : 1;
+    tbodyEl.innerHTML = looks.map(lk => {
+        const n = Math.round(lk.t * N);
+        const days = hasDays ? Math.round(n / dailyN) : null;
+        const isCurrent = currentLook && lk.k === currentLook.k;
+        const pBoundary = sides2 * (1 - normCDF(lk.z));
+        let statusCell = '';
+        let rowClass = '';
+        if (hasCurrentZ && currentLook) {
+            if (isCurrent) {
+                const absZ = Math.abs(currentZ);
+                const dec = absZ >= lk.z ? 'stop' : 'continue';
+                statusCell = `<td class="${dec === 'stop' ? 'cell-stop' : 'cell-continue'}">${dec === 'stop' ? '🛑 超过边界' : '▶ 未超过边界'}</td>`;
+                rowClass = dec === 'stop' ? 'stop-row' : 'highlight-row';
+            } else {
+                statusCell = `<td class="cell-look">—</td>`;
+            }
+        }
+        return `<tr class="${rowClass}">
+            <td>第 ${lk.k} 次${lk.k === K ? ' (终)' : ''}</td>
+            <td>${lk.t.toFixed(3)}</td>
+            <td>${n.toLocaleString()}</td>
+            ${hasDays ? `<td>${days}</td>` : ''}
+            <td>${(lk.cumSpent*100).toFixed(4)}%</td>
+            <td>${(lk.deltaAlpha*100).toFixed(4)}%</td>
+            <td><strong>${lk.z.toFixed(3)}</strong></td>
+            <td>${pBoundary.toFixed(5)}</td>
+            ${hasCurrentZ && currentLook ? statusCell : ''}
+        </tr>`;
+    }).join('');
+
+    // Formula
+    const bName = bType === 'obf' ? 'O\'Brien-Fleming' : 'Pocock';
+    const bFormula = bType === 'obf'
+        ? `α*(t) = 2 × [1 − Φ(z<sub>α/2</sub> / √t)]，其中 z<sub>α/2</sub> = ${normInv(1-alpha/2).toFixed(3)}`
+        : `α*(t) = α × ln(1 + (e−1) × t)，其中 α = ${alpha}`;
+    document.getElementById('formula-text').innerHTML = `
+        <strong>方法：${bName} α 消费函数（Lan-DeMets, 1983）</strong><br>
+        <strong>消费函数：</strong>${bFormula}<br>
+        <strong>边界计算：</strong>第 k 次分析（t = k/K）消费 Δα<sub>k</sub> = α*(t<sub>k</sub>) − α*(t<sub>k−1</sub>)；边界 z<sub>k</sub> = Φ<sup>−1</sup>(1 − Δα<sub>k</sub>/${tail === 'two' ? '2' : '1'})<br>
+        <strong>核心性质：</strong>所有中期分析与最终分析的总 I 类错误率 ≤ α（${(alpha*100).toFixed(0)}%），无论在哪次分析停止。<br>
+        <strong>使用前提：</strong>停止规则须在实验开始前预先注册（prospective）；中途追加分析节点会使保证失效。<br>
+        <strong>与固定样本量的差异：</strong>${bType === 'obf' ? 'O\'Brien-Fleming 最终分析边界接近（略高于）固定样本量检验，检验力损失极小（&lt;1%）。' : 'Pocock 各次分析边界相等，最终分析边界高于固定样本量检验（更保守），需增加总样本量约 10-30% 以补偿。'}
+    `;
+
+    const sides2 = tail === 'two' ? 2 : 1;
+    const finalBoundary = looks[K-1].z;
+    const finalP = (sides2 * (1 - normCDF(finalBoundary))).toFixed(5);
+    document.getElementById('interp-text').innerHTML = `
+        <strong>如何读边界表</strong><br>
+        每行对应一次计划中的分析节点。<strong>边界 |z|</strong> 是该节点的临界值：若当次 z 检验统计量的绝对值 ≥ 该值，则达到早停条件。<strong>本次 Δα</strong> 是本节点消耗的误报率预算；<strong>累计消费 α</strong> 是截至本节点已消耗的总预算。<br><br>
+        <strong>如何读边界图</strong><br>
+        蓝色折线是各节点的停止边界，向右（信息积累）通常逐步降低。灰色虚线是固定样本量的参考临界值（z=${normInv(1-alpha/sides2).toFixed(2)}，p=${alpha}）${bType === 'obf' ? '；O\'Brien-Fleming 最终边界接近此线' : '；Pocock 各节点边界均相等且高于此线'}。${hasCurrentZ ? '橙色点是当前节点；水平虚线是当前 |z| 值。' : '填写当前 z 统计量后，图中会显示当前位置与边界的对比。'}<br><br>
+        <strong>停止与继续的决策逻辑</strong><br>
+        • <span style="color:var(--accent-red)">🛑 超过边界</span>：|z| ≥ 当前节点边界 → 结果显著，可按预设规则宣告有效并停止实验。此时整体 I 类错误率仍 ≤ α。<br>
+        • <span style="color:var(--accent-green)">▶ 未超过边界</span>：|z| &lt; 当前节点边界 → 证据不足，继续实验，等待下一节点。<br>
+        • <strong>走到最终分析（第 ${K} 次）</strong>：若所有中期节点均未超过边界，在最终分析使用最终边界（|z| ≥ ${finalBoundary.toFixed(3)}，即 p ≤ ${finalP}）做结论。<br><br>
+        <strong>注意事项</strong><br>
+        • <strong>不得追加节点</strong>：实验开始后不能临时增加查看次数，否则消费函数的保证失效。<br>
+        • <strong>不得回溯适用</strong>：序贯边界必须在实验开始前注册，不能在看到数据后才选择此方法。<br>
+        • <strong>效应量报告</strong>：早停时样本量较小，效应量估计偏高（赢者诅咒）；在报告结果时注意说明这一局限性。
+    `;
+
+    document.getElementById('results').classList.add('visible');
+    trackEvent('compute');
+}
+
+function renderBoundaryChart(looks, currentLook, currentZ, tail, N, dailyN) {
+    const W = 560, H = 260, ml = 54, mr = 20, mt = 14, mb = 44;
+    const pw = W - ml - mr, ph = H - mt - mb;
+    const K = looks.length;
+
+    const allZ = looks.map(l => l.z);
+    const sides = tail === 'two' ? 2 : 1;
+    const fixedZ = normInv(1 - (parseFloat(document.getElementById('alpha').value) || 0.05) / sides);
+
+    const maxZ = Math.max(...allZ, fixedZ, currentZ != null ? Math.abs(currentZ) : 0) * 1.15 + 0.3;
+    const minZ = 0;
+
+    const xOf = k => ml + (k - 1) / (K - 1) * pw;
+    const yOf = z => mt + ph - (z - minZ) / (maxZ - minZ) * ph;
+
+    let svg = '';
+
+    // Grid
+    const yTicks = [1, 1.5, 2, 2.5, 3, 3.5, 4].filter(v => v <= maxZ);
+    svg += yTicks.map(v => {
+        const y = yOf(v);
+        return `<line x1="${ml}" y1="${y}" x2="${ml+pw}" y2="${y}" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+                <text x="${ml-6}" y="${y+4}" text-anchor="end" fill="#6b7280" font-size="10">${v}</text>`;
+    }).join('');
+
+    // X ticks
+    svg += looks.map(lk => {
+        const x = xOf(lk.k);
+        return `<line x1="${x}" y1="${mt}" x2="${x}" y2="${mt+ph+6}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                <text x="${x}" y="${mt+ph+18}" text-anchor="middle" fill="#6b7280" font-size="10">${lk.k}</text>`;
+    }).join('');
+    svg += `<text x="${ml+pw/2}" y="${H-4}" text-anchor="middle" fill="#9ca3af" font-size="11">分析节点</text>`;
+
+    // Fixed horizon reference line
+    const yFix = yOf(fixedZ);
+    svg += `<line x1="${ml}" y1="${yFix}" x2="${ml+pw}" y2="${yFix}" stroke="#6b7280" stroke-width="1" stroke-dasharray="4,4"/>
+            <text x="${ml+pw+4}" y="${yFix+4}" fill="#6b7280" font-size="9">固定 z=${fixedZ.toFixed(2)}</text>`;
+
+    // Boundary area fill
+    const pts = looks.map(lk => `${xOf(lk.k)},${yOf(lk.z)}`).join(' ');
+    const lastX = xOf(K), firstX = xOf(1);
+    svg += `<polygon points="${firstX},${mt} ${pts} ${lastX},${mt}" fill="rgba(59,130,246,0.07)" stroke="none"/>`;
+
+    // Boundary polyline
+    svg += `<polyline points="${pts}" fill="none" stroke="var(--accent-blue)" stroke-width="2.5" stroke-linejoin="round"/>`;
+
+    // Boundary dots + labels
+    svg += looks.map(lk => {
+        const x = xOf(lk.k), y = yOf(lk.z);
+        const isCurrent = currentLook && lk.k === currentLook.k;
+        const color = isCurrent ? 'var(--accent-orange)' : 'var(--accent-blue)';
+        return `<circle cx="${x}" cy="${y}" r="${isCurrent ? 6 : 4}" fill="${color}" stroke="var(--bg-secondary)" stroke-width="2"/>
+                <text x="${x}" y="${y-9}" text-anchor="middle" fill="${color}" font-size="9" font-weight="600">${lk.z.toFixed(2)}</text>`;
+    }).join('');
+
+    // Current z line
+    if (currentZ != null) {
+        const absZ = Math.abs(currentZ);
+        if (absZ >= minZ && absZ <= maxZ * 1.05) {
+            const yZ = yOf(absZ);
+            const color = currentLook && absZ >= currentLook.z ? '#ef4444' : '#10b981';
+            svg += `<line x1="${ml}" y1="${yZ}" x2="${ml+pw}" y2="${yZ}" stroke="${color}" stroke-width="1.5" stroke-dasharray="6,3"/>
+                    <text x="${ml+6}" y="${yZ-5}" fill="${color}" font-size="10">当前 |z|=${absZ.toFixed(3)}</text>`;
+        }
+    }
+
+    // Axes
+    svg += `<line x1="${ml}" y1="${mt}" x2="${ml}" y2="${mt+ph}" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>
+            <line x1="${ml}" y1="${mt+ph}" x2="${ml+pw}" y2="${mt+ph}" stroke="rgba(255,255,255,0.2)" stroke-width="1.5"/>`;
+
+    // Y axis label
+    svg += `<text x="12" y="${mt+ph/2}" text-anchor="middle" fill="#9ca3af" font-size="11" transform="rotate(-90,12,${mt+ph/2})">边界 |z|</text>`;
+
+    document.getElementById('boundary-chart').innerHTML = svg;
+}
+
+function trackEvent(action) {
+    if (typeof gtag !== 'undefined') {
+        gtag('event', action, { event_category: 'sequential_test' });
+    }
+}
+
+function toggleGuide() {
+    const body = document.getElementById('guide-body');
+    const arrow = document.getElementById('guide-arrow');
+    const open = body.style.display !== 'none';
+    body.style.display = open ? 'none' : 'block';
+    arrow.style.transform = open ? '' : 'rotate(180deg)';
+}
+</script>
+</body>
+</html>

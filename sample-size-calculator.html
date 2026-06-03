@@ -322,6 +322,12 @@
             </div>
         </div>
 
+        <!-- Global settings -->
+        <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:16px;">
+            <label style="font-size:0.85rem;color:var(--text-secondary);white-space:nowrap;">最小样本量 <span class="tooltip tip-left" data-tip="计算结果低于此值时自动补足到该阈值。默认 200，可按需调整（如小流量场景可降低，严格实验可提高）。">ⓘ</span></label>
+            <input type="number" id="min-sample" value="200" min="1" step="1" style="width:100px;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;color:var(--text-primary);font-size:0.88rem;">
+        </div>
+
         <!-- ==================== Mode 1: 精度 → 样本量 ==================== -->
         <div id="mode1">
             <div class="card">
@@ -670,7 +676,9 @@ let metricType = 'proportion';  // 'proportion' or 'mean'
 const PAGES = ['L', 'D', 'B', 'O', 'M'];
 const PAGE_NAMES = { L: 'List 列表页', D: 'Detail 详情页', B: 'Booking 预订页', O: 'Order 订单页', M: 'Message 订后短信' };
 const Z_CI = { 0.90: 1.645, 0.95: 1.960, 0.99: 2.576 };
-const MIN_SAMPLE = 200;
+function getMinSample() {
+    return Math.max(1, parseInt(document.getElementById('min-sample').value) || 200);
+}
 
 // GA追踪
 function trackEvent(action, mode) {
@@ -711,7 +719,7 @@ function variance(p) { return p * (1 - p); }
 // ===== 比例指标公式 =====
 function calcN_single(p, delta, alpha, power) {
     const z = getZ(alpha, power);
-    return Math.max(Math.ceil(z * z * variance(p) / (delta * delta)), MIN_SAMPLE);
+    return Math.max(Math.ceil(z * z * variance(p) / (delta * delta)), getMinSample());
 }
 
 function calcMDE_single(p, n, alpha, power) {
@@ -725,8 +733,8 @@ function calcNB_given_nA_proportion(pA, nA, pB, delta, alpha, power) {
     const varA = variance(pA);
     const varB = variance(pB);
     const remaining = targetSE2 - varA / nA;
-    if (remaining <= 0) return { nB: MIN_SAMPLE, warning: true };
-    return { nB: Math.max(Math.ceil(varB / remaining), MIN_SAMPLE), warning: false };
+    if (remaining <= 0) return { nB: getMinSample(), warning: true };
+    return { nB: Math.max(Math.ceil(varB / remaining), getMinSample()), warning: false };
 }
 
 function calcMDE_ab_proportion(pA, nA, pB, nB, alpha, power) {
@@ -752,8 +760,8 @@ function calcNB_given_nA_mean(sigmaA, nA, sigmaB, delta, alpha, power) {
     const z = getZ(alpha, power);
     const targetSE2 = Math.pow(delta / z, 2);
     const remaining = targetSE2 - (sigmaA * sigmaA) / nA;
-    if (remaining <= 0) return { nB: MIN_SAMPLE, warning: true };
-    return { nB: Math.max(Math.ceil((sigmaB * sigmaB) / remaining), MIN_SAMPLE), warning: false };
+    if (remaining <= 0) return { nB: getMinSample(), warning: true };
+    return { nB: Math.max(Math.ceil((sigmaB * sigmaB) / remaining), getMinSample()), warning: false };
 }
 
 function calcMDE_ab_mean(sigmaA, nA, sigmaB, nB, alpha, power) {
@@ -1051,12 +1059,16 @@ function calcMode1() {
         const z = getZ(alpha, power);
         const za = normInv(1 - alpha/2), zb = normInv(power);
         const n = calcN_single(p, delta, alpha, power);
+        const rawN = Math.ceil(z * z * variance(p) / (delta * delta));
         const verifyMDE = calcMDE_single(p, n, alpha, power);
+        const clampNote = rawN < getMinSample()
+            ? `<div style="color:var(--accent-orange);margin-top:8px;">⚠️ 统计计算结果为 ${rawN}，低于最小样本量阈值，已自动补足至 ${getMinSample()}</div>`
+            : '';
 
         html = `<div class="result-summary">
             <div class="result-label">最小样本量（单组）</div>
             <div class="result-value">${n.toLocaleString()}</div>
-            <div class="result-note">p=${(p*100).toFixed(1)}%, MDE=${(delta*100).toFixed(2)}%, α=${alpha}, Power=${power}</div>
+            <div class="result-note">p=${(p*100).toFixed(1)}%, MDE=${(delta*100).toFixed(2)}%, α=${alpha}, Power=${power}${clampNote}</div>
         </div>`;
 
         formula = `<strong>公式：</strong>n = Z² × p(1-p) / δ²<br>
@@ -1139,9 +1151,9 @@ function calcMode1() {
         
         let warningNote = '';
         if (result.warning) {
-            warningNote = `<div style="color:var(--accent-orange);margin-top:12px;">⚠️ A组样本量不足以达到目标MDE，B组已设为最小值${MIN_SAMPLE}</div>`;
+            warningNote = `<div style="color:var(--accent-orange);margin-top:12px;">⚠️ A组样本量不足以达到目标MDE，B组已设为最小值${getMinSample()}</div>`;
         }
-        
+
         html = `<div class="ab-result-grid">
             <div class="ab-result-card"><div class="ab-result-label">A 组样本量 (输入)</div><div class="ab-result-value">${nA.toLocaleString()}</div></div>
             <div class="ab-result-card"><div class="ab-result-label">B 组样本量 (计算)</div><div class="ab-result-value">${nB.toLocaleString()}</div></div>
@@ -1151,11 +1163,11 @@ function calcMode1() {
             pA=${(pA*100).toFixed(1)}%, pB=${(pB*100).toFixed(1)}%, 目标MDE=${(delta*100).toFixed(2)}%, 实际MDE=${(actualMDE*100).toFixed(2)}%
             ${warningNote}
         </div>`;
-        
+
         const targetSE2 = Math.pow(delta/z, 2);
         const varA = variance(pA), varB = variance(pB);
         const remaining = targetSE2 - varA/nA;
-        
+
         formula = `<strong>原理：</strong>给定A组样本量nA，计算B组所需最小样本量nB<br>
             <strong>公式：</strong>nB = VarB / [(δ/Z)² - VarA/nA]<br>
             <strong>其中：</strong>Z = Z<sub>α/2</sub> + Z<sub>β</sub> = ${za.toFixed(3)} + ${zb.toFixed(3)} = ${z.toFixed(3)}<br>
@@ -1165,7 +1177,7 @@ function calcMode1() {
             &nbsp;&nbsp;剩余 = ${remaining.toFixed(8)}<br>
             &nbsp;&nbsp;nB = ${varB.toFixed(4)} / ${remaining.toFixed(8)} = ${nB.toLocaleString()}<br>
             <strong>验证：</strong>MDE = ${(actualMDE*100).toFixed(4)}%`;
-        
+
         renderMode1PageTable_AB(alpha, power, delta);
         
     } else {
@@ -1190,9 +1202,9 @@ function calcMode1() {
         
         let warningNote = '';
         if (result.warning) {
-            warningNote = `<div style="color:var(--accent-orange);margin-top:12px;">⚠️ A组样本量不足以达到目标MDE，B组已设为最小值${MIN_SAMPLE}</div>`;
+            warningNote = `<div style="color:var(--accent-orange);margin-top:12px;">⚠️ A组样本量不足以达到目标MDE，B组已设为最小值${getMinSample()}</div>`;
         }
-        
+
         html = `<div class="ab-result-grid">
             <div class="ab-result-card"><div class="ab-result-label">A 组样本量 (输入)</div><div class="ab-result-value">${nA.toLocaleString()}</div></div>
             <div class="ab-result-card"><div class="ab-result-label">B 组样本量 (计算)</div><div class="ab-result-value">${nB.toLocaleString()}</div></div>
@@ -1256,7 +1268,7 @@ function renderMode1PageTable_AB(alpha, power, delta) {
     let tbody = '';
     for (const pg of pages) {
         const pageDelta = delta / pg.w;
-        let pageNB = MIN_SAMPLE;
+        let pageNB = getMinSample();
         if (pg.nA > 0) {
             const result = calcNB_given_nA_proportion(pg.pA, pg.nA, pg.pB, pageDelta, alpha, power);
             pageNB = result.nB;
