@@ -343,7 +343,10 @@
                     <span class="lg"><span style="width:18px;border-top:2px dashed var(--text-muted);display:inline-block"></span>基准线（差异=0）</span>
                 </div>
 
-                <h4 class="section-title">明细</h4>
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+                    <h4 class="section-title" style="margin:30px 0 18px;">明细</h4>
+                    <button class="btn btn-secondary btn-sm" onclick="downloadResults()">⬇ 下载结果 CSV</button>
+                </div>
                 <div class="table-container">
                     <table class="results-table"><thead id="res-thead"></thead><tbody id="res-tbody"></tbody></table>
                 </div>
@@ -355,6 +358,7 @@
 
 <script>
 let testType = 'single'; // 'single' | 'two'
+let lastRun = null; // 保存最近一次检验结果用于导出
 
 // ====== 示例数据（与下载的 CSV 文件一致） ======
 const SAMPLE_SINGLE = [
@@ -521,6 +525,7 @@ function clearRows() {
     addRow();
     document.getElementById('results').classList.remove('visible');
     setCsvStatus('', '');
+    lastRun = null;
 }
 
 function getRows() {
@@ -650,6 +655,7 @@ function runTest() {
     const corrected = correction !== 'none';
     results.forEach((r, i) => { r.pAdj = pAdj[i]; r.corrected = corrected; r.sig = pAdj[i] < alpha; });
 
+    lastRun = { results, alpha, tail, correction, testType };
     renderSummary(results, alpha);
     renderForest(results);
     renderTable(results, alpha, tail);
@@ -817,6 +823,68 @@ function correctionFormula(method) {
         bh: 'Benjamini-Hochberg：将 p 值升序排列，第 k 小者乘以 m/k 并保持单调。控制错误发现率 FDR ≤ α，适合多指标探索。'
     }[method];
     return `<br><strong>多重比较校正 · ${CORRECTION_NAMES[method]}</strong><br>${desc}`;
+}
+
+// ====== 结果导出 ======
+function csvCell(v) {
+    const s = String(v);
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function saveCsv(rows, fname) {
+    const csv = rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fname; a.click();
+    URL.revokeObjectURL(url);
+}
+
+function downloadResults() {
+    if (!lastRun || !lastRun.results.length) { alert('请先运行检验后再下载结果'); return; }
+    const { results, alpha, tail, correction, testType: tt } = lastRun;
+    const tailTxt = { two: '双侧', greater: '右侧', less: '左侧' }[tail];
+    const ciPct = ((1 - alpha) * 100).toFixed(0);
+    const corrected = correction !== 'none';
+    const pct = v => (v * 100).toFixed(2) + '%';
+    const sigTxt = r => r.sig ? (r.est > 0 ? '显著↑' : '显著↓') : '不显著';
+
+    const rows = [];
+    if (tt === 'single') {
+        const head = ['指标', '成功数x', '样本量n', '观测比例p_hat', '基准p0', '差异', `CI下限(${ciPct}%)`, `CI上限(${ciPct}%)`, 'z值', 'p值'];
+        if (corrected) head.push('校正后p');
+        head.push('结论');
+        rows.push(head);
+        results.forEach(r => {
+            const row = [r.metric, r.raw.x, r.raw.n, pct(r.phat), pct(r.p0), pct(r.est), pct(r.ciLow), pct(r.ciHigh), r.z.toFixed(4), r.p.toExponential(4)];
+            if (corrected) row.push(r.pAdj.toExponential(4));
+            row.push(sigTxt(r));
+            rows.push(row);
+        });
+    } else {
+        const head = ['指标', 'A成功数x1', 'A样本量n1', 'B成功数x2', 'B样本量n2', 'A比例', 'B比例', '差异(A-B)', `CI下限(${ciPct}%)`, `CI上限(${ciPct}%)`, 'z值', 'p值'];
+        if (corrected) head.push('校正后p');
+        head.push('结论');
+        rows.push(head);
+        results.forEach(r => {
+            const row = [r.metric, r.raw.x1, r.raw.n1, r.raw.x2, r.raw.n2, pct(r.p1), pct(r.p2), pct(r.est), pct(r.ciLow), pct(r.ciHigh), r.z.toFixed(4), r.p.toExponential(4)];
+            if (corrected) row.push(r.pAdj.toExponential(4));
+            row.push(sigTxt(r));
+            rows.push(row);
+        });
+    }
+
+    // 元信息行（便于追溯检验设置）
+    rows.push([]);
+    rows.push(['# 检验类型', tt === 'single' ? '单样本z比例检验' : '双样本z比例检验']);
+    rows.push(['# 显著性水平α', alpha]);
+    rows.push(['# 检验方向', tailTxt]);
+    rows.push(['# 置信度', ciPct + '%']);
+    rows.push(['# 多重比较校正', CORRECTION_NAMES[correction]]);
+    rows.push(['# 导出时间', new Date().toLocaleString('zh-CN')]);
+
+    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '').replace(/-/g, '');
+    saveCsv(rows, `significance-result-${tt}-${stamp}.csv`);
+    trackEvent('download_result');
 }
 
 // ====== CSV 模板下载 ======
