@@ -270,6 +270,15 @@
                         <option value="less">左侧检验 (&lt;)</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label>多重比较校正 <span class="tooltip" data-tip="同时检验多个指标时整体误报率会膨胀。校正后基于校正 p 值判定显著性。Bonferroni 最保守；Holm 检验力更高；BH 控制错误发现率（FDR）。">ⓘ</span></label>
+                    <select id="correction" onchange="updateParamInfo()">
+                        <option value="none">不校正</option>
+                        <option value="bonferroni">Bonferroni</option>
+                        <option value="holm">Holm-Bonferroni</option>
+                        <option value="bh">Benjamini-Hochberg (FDR)</option>
+                    </select>
+                </div>
                 <div class="form-group" id="single-baseline-group">
                     <label>默认基准比例 p₀ <span class="tooltip tip-left" data-tip="单样本检验中，每个指标与该基准比例比较。表格中可对每行单独覆盖。">ⓘ</span></label>
                     <input type="number" id="default-p0" value="50" step="0.1" min="0" max="100" placeholder="例如: 50">
@@ -405,6 +414,38 @@ function pValue(z, tail) {
     if (tail === 'less') return normCDF(z);
     return 2 * (1 - normCDF(Math.abs(z)));
 }
+
+// 多重比较校正：返回各指标的校正后 p 值
+function adjustPValues(pvals, method) {
+    const m = pvals.length;
+    if (m === 0 || method === 'none') return pvals.slice();
+    if (method === 'bonferroni') return pvals.map(p => Math.min(1, p * m));
+
+    const idx = pvals.map((p, i) => i).sort((a, b) => pvals[a] - pvals[b]); // 升序索引
+    const adj = new Array(m);
+    if (method === 'holm') {
+        let prev = 0;
+        for (let k = 0; k < m; k++) {
+            const i = idx[k];
+            let val = Math.min(1, (m - k) * pvals[i]);
+            val = Math.max(val, prev); // 保持单调不减
+            adj[i] = val; prev = val;
+        }
+    } else if (method === 'bh') {
+        let prev = 1;
+        for (let k = m - 1; k >= 0; k--) {
+            const i = idx[k];
+            let val = Math.min(1, pvals[i] * m / (k + 1));
+            val = Math.min(val, prev); // 保持单调不增
+            adj[i] = val; prev = val;
+        }
+    }
+    return adj;
+}
+
+const CORRECTION_NAMES = {
+    none: '不校正', bonferroni: 'Bonferroni', holm: 'Holm-Bonferroni', bh: 'Benjamini-Hochberg (FDR)'
+};
 
 // 单样本 z 比例检验：观测比例 p̂ 与基准 p0 比较
 function testSingle(x, n, p0, alpha, tail) {
@@ -592,7 +633,7 @@ function runTest() {
             if (!(n > 0) || !(x >= 0) || x > n) { alert(`第 ${i + 1} 行（${metric}）的 x/n 无效：需满足 0 ≤ x ≤ n 且 n>0`); return; }
             if (!(p0 > 0 && p0 < 1)) { alert(`第 ${i + 1} 行（${metric}）的基准比例 p₀ 无效（需在 0-100% 之间）`); return; }
             const t = testSingle(x, n, p0, alpha, tail);
-            results.push({ metric, raw: { x, n }, ...t, sig: t.p < alpha });
+            results.push({ metric, raw: { x, n }, ...t });
         } else {
             const x1 = parseFloat(r.x1), n1 = parseFloat(r.n1), x2 = parseFloat(r.x2), n2 = parseFloat(r.n2);
             if (!(n1 > 0 && n2 > 0) || !(x1 >= 0 && x2 >= 0) || x1 > n1 || x2 > n2) {
