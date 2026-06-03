@@ -6,16 +6,23 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 A multi-tool statistical analysis suite (Chinese-language UI) for the URS Data Science team. Deployed via GitHub Pages at `urs-ds.xueshaoyang.com`.
 
-**Site structure — four self-contained HTML files, no build system, no dependencies:**
-- `index.html` — Landing page linking to all four tools
-- `sample-size-calculator.html` — Sample size / MDE calculator
-- `significance-test.html` — Significance testing tool (z proportion tests)
-- `power-analysis.html` — Statistical power vs. experiment duration charts
-- `sequential-test.html` — Sequential testing / early stopping boundaries
+**Site structure — static HTML, no build system, no dependencies:**
 
-Open any file directly in a browser to develop — no server required.
+```
+index.html                          # 首页（唯一保留在根目录）
+tools/
+  sample-size/index.html            # 样本量计算器
+  significance-test/index.html      # 显著性检验
+  power-analysis/index.html         # 功效分析
+  sequential-test/index.html        # 序贯检验
+data/mock/
+  significance-single-sample.csv    # 单样本检验示例数据
+  significance-two-sample.csv       # 双样本检验示例数据
+```
 
-## sample-size-calculator.html
+Open `index.html` or any tool page directly in a browser to develop — no server required. Homepage links use explicit `tools/<name>/index.html` paths (directory URLs like `tools/sample-size/` do not resolve under `file://`). GitHub Pages also has a root `.nojekyll` so Jekyll does not interfere with static assets.
+
+## tools/sample-size/index.html
 
 Two scenarios:
 - **Long-term Monitoring** (长期观测): Paired-sample, single-group proportion tests
@@ -29,7 +36,7 @@ Key JavaScript structure:
 - **Statistical core**: `normInv()` (rational approximation of inverse normal CDF), `getZ()`, `calcN_single()`, `calcMDE_single()`, `calcNB_given_nA_proportion()`, `calcNB_given_nA_mean()`, `calcMDE_ab_proportion()`, `calcMDE_ab_mean()`, weighted SE functions
 - **UI state**: Global `scenario` and `metricType` variables control which input panels are visible
 - **LDBOM page system**: 5 pages (L/D/B/O/M) with per-page weights and parameters for weighted SE calculations
-- **GA tracking**: Google Analytics (G-KVLVZCEG29) fires on each calculation
+- **GA tracking**: Google Analytics (G-VQV08H7W6V) fires on each calculation
 
 ### Key Constants
 
@@ -57,7 +64,7 @@ Key JavaScript structure:
 
 **Results visibility** — Results are shown/hidden by toggling the `.visible` class on `.results-section` elements (CSS handles the `display: none` / `display: block` with a fade-in animation).
 
-## significance-test.html
+## tools/significance-test/index.html
 
 Batch z proportion test tool. Users enter metric data via an editable table or by uploading/drag-dropping a CSV file.
 
@@ -73,13 +80,13 @@ Key features:
 - **CSV export**: downloads results including OR, corrected p-values, power, and a metadata footer; `downloadResults()`
 - **Template download**: `downloadTemplate()` generates a correctly-formatted CSV for the active test type
 
-Mock CSV files in the repo root serve as template examples:
-- `mock-significance-single-sample.csv` — columns: `metric, x, n, p0`
-- `mock-significance-two-sample.csv` — columns: `metric, x1, n1, x2, n2`
+Example CSV files in `data/mock/` (for local testing / reference; not loaded by the app):
+- `data/mock/significance-single-sample.csv` — columns: `metric, x, n, p0`
+- `data/mock/significance-two-sample.csv` — columns: `metric, x1, n1, x2, n2`
 
 Key functions: `testSingle()`, `testTwo()`, `adjustPValues()`, `calcPower()`, `renderForest()`, `renderTable()`, `renderFormula()`, `runTest()`.
 
-## power-analysis.html
+## tools/power-analysis/index.html
 
 Visualizes how statistical power and detectable MDE evolve over experiment duration.
 
@@ -99,7 +106,7 @@ Key functions: `calcPower()`, `calcMDE()`, `buildPowerCurve()`, `buildMDECurve()
 
 **Statistical note** — `calcMDE()` for AB uses the approximation SE = √(2p₀(1−p₀)/n), treating pA ≈ pB ≈ p₀. `calcPower()` uses the exact pB = p₀ + δ. The two charts are mathematically consistent: the crossing day on both charts is the same value.
 
-## sequential-test.html
+## tools/sequential-test/index.html
 
 Computes alpha-spending early stopping boundaries for sequential / interim analysis. Lets users determine whether a running experiment can be stopped early without inflating the overall Type I error rate.
 
