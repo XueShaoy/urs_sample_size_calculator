@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>显著性检验 · z 比例检验</title>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-KVLVZCEG29"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', 'G-KVLVZCEG29');
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #0a0e14;
+            --bg-secondary: #141a22;
+            --bg-tertiary: #1c242e;
+            --bg-card: #151c25;
+            --border-color: #2a3441;
+            --text-primary: #e8eaed;
+            --text-secondary: #9ca3af;
+            --text-muted: #6b7280;
+            --accent-blue: #3b82f6;
+            --accent-cyan: #06b6d4;
+            --accent-green: #10b981;
+            --accent-orange: #f59e0b;
+            --accent-purple: #8b5cf6;
+            --accent-red: #ef4444;
+            --shadow: 0 4px 32px rgba(0,0,0,0.5);
+            --glow-blue: 0 0 20px rgba(59, 130, 246, 0.3);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-primary); color: var(--text-primary);
+            min-height: 100vh; line-height: 1.7;
+            background-image: radial-gradient(ellipse at 10% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
+                              radial-gradient(ellipse at 90% 80%, rgba(139,92,246,0.06) 0%, transparent 50%);
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
+
+        /* Test-type Switch (top-left) */
+        .scenario-switch {
+            position: fixed; top: 20px; left: 20px; z-index: 1000;
+            display: flex; background: var(--bg-secondary); border-radius: 12px;
+            padding: 4px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
+        }
+        .scenario-btn {
+            padding: 10px 18px; border: none; background: transparent;
+            color: var(--text-secondary); font-size: 0.85rem; font-family: inherit;
+            cursor: pointer; border-radius: 8px; transition: all 0.25s;
+            display: flex; align-items: center; gap: 8px; font-weight: 500;
+        }
+        .scenario-btn.active { background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; }
+        .scenario-btn:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); }
+
+        /* Back to Home */
+        .home-link {
+            position: fixed; top: 20px; right: 20px; z-index: 1000;
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 16px; border-radius: 12px;
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); color: var(--text-secondary);
+            font-size: 0.85rem; font-weight: 500; text-decoration: none;
+            transition: all 0.25s;
+        }
+        .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
+
+        header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+        h1 {
+            font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+        }
+        .subtitle { color: var(--text-secondary); font-size: 1rem; }
+        .scenario-badge {
+            display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
+            border-radius: 20px; font-size: 0.8rem; font-weight: 500; margin-top: 12px;
+            background: rgba(139,92,246,0.15); color: var(--accent-purple); border: 1px solid rgba(139,92,246,0.3);
+        }
+
+        /* Card */
+        .card {
+            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px;
+            padding: 32px; margin-bottom: 24px; position: relative; overflow: visible;
+        }
+        .card::before {
+            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
+        }
+        .card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+        .card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
+        .card-icon.blue { background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(6,182,212,0.2)); }
+        .card-icon.green { background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2)); }
+        .card-icon.purple { background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.2)); }
+        .card-title { font-size: 1.15rem; font-weight: 600; }
+        .card-desc { font-size: 0.8rem; color: var(--text-secondary); margin-top: 3px; }
+
+        /* Form */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
+        .form-group { display: flex; flex-direction: column; gap: 8px; position: relative; overflow: visible; }
+        label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+
+        /* Tooltip */
+        .tooltip { position: relative; cursor: help; color: var(--accent-cyan); display: inline-flex; }
+        .tooltip::after {
+            content: attr(data-tip); position: absolute;
+            bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
+            background: var(--bg-primary); color: var(--text-primary);
+            padding: 12px 16px; border-radius: 10px; font-size: 0.75rem; font-weight: 400;
+            opacity: 0; visibility: hidden; transition: all 0.15s; z-index: 99999;
+            border: 1px solid var(--border-color); width: 240px;
+            white-space: normal; text-align: left; line-height: 1.6;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+            pointer-events: none;
+        }
+        .tooltip:hover::after { opacity: 1; visibility: visible; }
+        .tooltip.tip-left::after { left: auto; right: -8px; transform: none; }
+        .tooltip.tip-right::after { left: -8px; right: auto; transform: none; }
+
+        input[type="number"], input[type="text"], select {
+            background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px;
+            padding: 12px 16px; color: var(--text-primary); font-size: 0.95rem;
+            font-family: 'JetBrains Mono', monospace; width: 100%;
+        }
+        select { font-family: 'Noto Sans SC', sans-serif; cursor: pointer; }
+        input:focus, select:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        input::placeholder { color: var(--text-muted); }
+
+        /* Buttons */
+        .btn {
+            padding: 14px 32px; border: none; border-radius: 12px; font-size: 0.95rem;
+            font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.25s;
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+        }
+        .btn-primary { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--glow-blue); }
+        .btn-secondary { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
+        .btn-sm { padding: 9px 16px; font-size: 0.82rem; border-radius: 9px; }
+        .action-row { display: flex; gap: 14px; margin-top: 28px; justify-content: flex-end; flex-wrap: wrap; }
+
+        /* Data table (editable) */
+        .data-toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
+        .data-toolbar .spacer { flex: 1; }
+        .table-scroll { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 14px; }
+        table.data-table { width: 100%; border-collapse: collapse; min-width: 560px; }
+        table.data-table th {
+            background: var(--bg-secondary); font-size: 0.72rem; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.04em; padding: 12px 12px; text-align: left;
+            border-bottom: 1px solid var(--border-color); white-space: nowrap;
+        }
+        table.data-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); }
+        table.data-table tr:last-child td { border-bottom: none; }
+        table.data-table input { padding: 9px 12px; border-radius: 8px; font-size: 0.88rem; }
+        table.data-table input.metric-input { font-family: 'Noto Sans SC', sans-serif; }
+        .row-del {
+            background: rgba(239,68,68,0.12); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.25);
+            border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; line-height: 1;
+            display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;
+        }
+        .row-del:hover { background: rgba(239,68,68,0.25); }
+
+        /* Dropzone */
+        .dropzone {
+            margin-top: 18px; border: 1.5px dashed var(--border-color); border-radius: 14px;
+            padding: 26px; text-align: center; color: var(--text-secondary); font-size: 0.85rem;
+            background: var(--bg-secondary); transition: all 0.2s; cursor: pointer;
+        }
+        .dropzone:hover, .dropzone.dragover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(6,182,212,0.06); }
+        .dropzone strong { color: var(--accent-cyan); }
+        .dropzone .dz-hint { display: block; margin-top: 8px; font-size: 0.75rem; color: var(--text-muted); }
+        .csv-status { margin-top: 12px; font-size: 0.8rem; }
+        .csv-status.ok { color: var(--accent-green); }
+        .csv-status.err { color: var(--accent-red); }
+
+        /* Info box */
+        .info-box { background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.2); border-radius: 12px; padding: 18px; margin-top: 20px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; }
+        .info-box strong { color: var(--accent-cyan); }
+        .info-box code { font-family: 'JetBrains Mono', monospace; background: var(--bg-tertiary); padding: 2px 7px; border-radius: 6px; color: var(--accent-purple); font-size: 0.78rem; }
+
+        /* Results */
+        .results-section { display: none; }
+        .results-section.visible { display: block; animation: fadeIn 0.4s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+        .summary-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; }
+        .summary-card .s-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; }
+        .summary-card .s-value { font-size: 1.8rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
+        .summary-card.sig { border-color: var(--accent-green); } .summary-card.sig .s-value { color: var(--accent-green); }
+        .summary-card.nsig { border-color: var(--accent-orange); } .summary-card.nsig .s-value { color: var(--accent-orange); }
+
+        .section-title { font-size: 1rem; font-weight: 600; margin: 30px 0 18px; display: flex; align-items: center; gap: 10px; }
+        .section-title::before { content: ''; width: 4px; height: 20px; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple)); border-radius: 2px; }
+
+        .table-container { overflow-x: auto; }
+        .results-table { width: 100%; border-collapse: collapse; min-width: 720px; }
+        .results-table th, .results-table td { padding: 13px 14px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
+        .results-table th { background: var(--bg-secondary); font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
+        .results-table td { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; }
+        .results-table td.metric-cell { font-family: 'Noto Sans SC', sans-serif; font-weight: 500; }
+        .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; font-family: 'Noto Sans SC', sans-serif; }
+        .tag.sig-up { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
+        .tag.sig-down { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
+        .tag.ns { background: rgba(107,114,128,0.15); color: var(--text-muted); border: 1px solid rgba(107,114,128,0.3); }
+
+        /* Forest plot */
+        .forest-wrap { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 18px 12px; overflow-x: auto; }
+        .forest-wrap svg { display: block; width: 100%; height: auto; min-width: 640px; }
+        .forest-legend { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; margin-top: 14px; font-size: 0.78rem; color: var(--text-secondary); }
+        .forest-legend .lg { display: inline-flex; align-items: center; gap: 7px; }
+        .forest-legend .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+
+        .formula-display { background: var(--bg-tertiary); border-radius: 12px; padding: 20px; margin-top: 24px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.8; border: 1px solid var(--border-color); }
+        .formula-display strong { color: var(--accent-purple); }
+
+        .watermark {
+            position: fixed; bottom: 16px; right: 20px;
+            font-size: 0.7rem; color: var(--text-muted); opacity: 0.5;
+            font-family: 'Noto Sans SC', sans-serif; letter-spacing: 0.02em;
+            pointer-events: none; z-index: 100;
+        }
+
+        @media (max-width: 768px) {
+            .container { padding: 24px 16px; padding-top: 110px; }
+            .scenario-switch { top: 56px; left: 10px; right: 10px; justify-content: center; }
+            .home-link { top: 10px; right: 10px; padding: 8px 12px; }
+            .form-grid { grid-template-columns: 1fr; }
+            .summary-row { grid-template-columns: repeat(2, 1fr); }
+        }
+    </style>
+</head>
+<body>
+    <div class="watermark">URS数据科学团队 © 2026 | v1.0.0</div>
+
+    <a class="home-link" href="index.html">← 返回首页</a>
+
+    <div class="scenario-switch">
+        <button class="scenario-btn active" data-test="single" onclick="switchTest('single')">📍 单样本检验</button>
+        <button class="scenario-btn" data-test="two" onclick="switchTest('two')">⚖️ 双样本检验</button>
+    </div>
+
+    <div class="container">
+        <header>
+            <h1>显著性检验</h1>
+            <p class="subtitle">z 比例检验 · 支持森林图可视化与本地 CSV 数据</p>
+            <div class="scenario-badge" id="test-badge">📍 单样本 z 比例检验</div>
+        </header>
+
+        <!-- 参数设置 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon blue">⚙️</div>
+                <div><div class="card-title">检验参数</div><div class="card-desc">设定显著性水平与检验方向</div></div>
+            </div>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>显著性水平 α <span class="tooltip tip-right" data-tip="假阳性率。α=0.05 表示 5% 概率误报。置信区间置信度为 1-α。">ⓘ</span></label>
+                    <input type="number" id="alpha" value="0.05" step="0.01" min="0.001" max="0.5">
+                </div>
+                <div class="form-group">
+                    <label>检验方向 <span class="tooltip" data-tip="双侧：检验是否存在差异（≠）。单侧：检验是否更大（&gt;）或更小（&lt;）。">ⓘ</span></label>
+                    <select id="tail">
+                        <option value="two">双侧检验 (≠)</option>
+                        <option value="greater">右侧检验 (&gt;)</option>
+                        <option value="less">左侧检验 (&lt;)</option>
+                    </select>
+                </div>
+                <div class="form-group" id="single-baseline-group">
+                    <label>默认基准比例 p₀ <span class="tooltip tip-left" data-tip="单样本检验中，每个指标与该基准比例比较。表格中可对每行单独覆盖。">ⓘ</span></label>
+                    <input type="number" id="default-p0" value="50" step="0.1" min="0" max="100" placeholder="例如: 50">
+                </div>
+            </div>
+            <div class="info-box" id="param-info"></div>
+        </div>
+
+        <!-- 数据输入 -->
+        <div class="card">
+            <div class="card-header">
+                <div class="card-icon green">📋</div>
+                <div><div class="card-title">指标数据</div><div class="card-desc">手动录入、或导入本地 CSV 文件</div></div>
+            </div>
+
+            <div class="data-toolbar">
+                <button class="btn btn-secondary btn-sm" onclick="addRow()">＋ 添加指标</button>
+                <button class="btn btn-secondary btn-sm" onclick="loadSample()">📦 加载示例数据</button>
+                <button class="btn btn-secondary btn-sm" onclick="clearRows()">🗑 清空</button>
+                <div class="spacer"></div>
+                <button class="btn btn-secondary btn-sm" onclick="downloadTemplate()">⬇ 下载 CSV 模板</button>
+            </div>
+
+            <div class="table-scroll">
+                <table class="data-table">
+                    <thead id="data-thead"></thead>
+                    <tbody id="data-tbody"></tbody>
+                </table>
+            </div>
+
+            <div class="dropzone" id="dropzone">
+                点击或拖拽 <strong>.csv</strong> 文件到此处导入
+                <span class="dz-hint" id="dz-hint"></span>
+                <input type="file" id="csv-file" accept=".csv,text/csv" style="display:none;">
+            </div>
+            <div class="csv-status" id="csv-status"></div>
+        </div>
+
+        <div class="action-row">
+            <button class="btn btn-secondary" onclick="clearRows()">🔄 重置</button>
+            <button class="btn btn-primary" onclick="runTest()">🧮 运行检验</button>
+        </div>
+
+        <!-- 结果 -->
+        <div class="results-section" id="results">
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon purple">📊</div>
+                    <div><div class="card-title">检验结果</div><div class="card-desc" id="result-desc">显著性判定与置信区间</div></div>
+                </div>
+
+                <div class="summary-row" id="summary-row"></div>
+
+                <h4 class="section-title">森林图 · 效应量与置信区间</h4>
+                <div class="forest-wrap">
+                    <div id="forest"></div>
+                </div>
+                <div class="forest-legend">
+                    <span class="lg"><span class="dot" style="background:var(--accent-green)"></span>显著（高于基准 / A&gt;B）</span>
+                    <span class="lg"><span class="dot" style="background:var(--accent-red)"></span>显著（低于基准 / A&lt;B）</span>
+                    <span class="lg"><span class="dot" style="background:var(--text-muted)"></span>不显著</span>
+                    <span class="lg"><span style="width:18px;border-top:2px dashed var(--text-muted);display:inline-block"></span>基准线（差异=0）</span>
+                </div>
+
+                <h4 class="section-title">明细</h4>
+                <div class="table-container">
+                    <table class="results-table"><thead id="res-thead"></thead><tbody id="res-tbody"></tbody></table>
+                </div>
+
+                <div class="formula-display" id="formula"></div>
+            </div>
+        </div>
+    </div>
+
+<script>
+let testType = 'single'; // 'single' | 'two'
+
+// ====== 示例数据（与下载的 CSV 文件一致） ======
+const SAMPLE_SINGLE = [
+    { metric: '列表页点击率', x: 3120, n: 4000, p0: 75 },
+    { metric: '详情页转化率', x: 860,  n: 2000, p0: 45 },
+    { metric: '预订完成率',   x: 1505, n: 2500, p0: 60 },
+    { metric: '订单支付成功率', x: 2790, n: 3000, p0: 90 },
+    { metric: '订后短信打开率', x: 410,  n: 1000, p0: 38 },
+    { metric: '客服转人工率',   x: 180,  n: 1500, p0: 15 }
+];
+const SAMPLE_TWO = [
+    { metric: '首页Banner点击率', x1: 1240, n1: 8000, x2: 1456, n2: 8000 },
+    { metric: '搜索结果转化率',   x1: 920,  n1: 5000, x2: 965,  n2: 5000 },
+    { metric: '商品加购率',       x1: 600,  n1: 3000, x2: 660,  n2: 3000 },
+    { metric: '提交下单率',       x1: 450,  n1: 3000, x2: 420,  n2: 3000 },
+    { metric: '30日复购率',       x1: 320,  n1: 2000, x2: 260,  n2: 2000 },
+    { metric: '订单退款率',       x1: 90,   n1: 2000, x2: 140,  n2: 2000 }
+];
+
+// ====== GA ======
+function trackEvent(action) {
+    if (typeof gtag !== 'undefined') {
+        gtag('event', action, { 'event_category': 'significance_test', 'event_label': testType });
+    }
+}
+
+// ====== 统计核心 ======
+function erf(x) {
+    const t = 1 / (1 + 0.3275911 * Math.abs(x));
+    const y = 1 - (((((1.061405429 * t - 1.453152027) * t) + 1.421413741) * t - 0.284496736) * t + 0.254829592) * t * Math.exp(-x * x);
+    return x >= 0 ? y : -y;
+}
+function normCDF(z) { return 0.5 * (1 + erf(z / Math.SQRT2)); }
+
+function normInv(p) {
+    if (p <= 0 || p >= 1) return p <= 0 ? -Infinity : Infinity;
+    const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
+    const b = [-54.47609879822406, 161.5858368580409, -155.6989798598866, 66.80131188771972, -13.28068155288572];
+    const c = [-0.007784894002430293, -0.3223964580411365, -2.400758277161838, -2.549732539343734, 4.374664141464968, 2.938163982698783];
+    const d = [0.007784695709041462, 0.3224671290700398, 2.445134137142996, 3.754408661907416];
+    const pLow = 0.02425;
+    let q, r;
+    if (p < pLow) {
+        q = Math.sqrt(-2 * Math.log(p));
+        return (((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+    } else if (p <= 1 - pLow) {
+        q = p - 0.5; r = q * q;
+        return (((((a[0]*r+a[1])*r+a[2])*r+a[3])*r+a[4])*r+a[5])*q / (((((b[0]*r+b[1])*r+b[2])*r+b[3])*r+b[4])*r+1);
+    } else {
+        q = Math.sqrt(-2 * Math.log(1 - p));
+        return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
+    }
+}
+
+function pValue(z, tail) {
+    if (tail === 'greater') return 1 - normCDF(z);
+    if (tail === 'less') return normCDF(z);
+    return 2 * (1 - normCDF(Math.abs(z)));
+}
+
+// 单样本 z 比例检验：观测比例 p̂ 与基准 p0 比较
+function testSingle(x, n, p0, alpha, tail) {
+    const phat = x / n;
+    const se0 = Math.sqrt(p0 * (1 - p0) / n);          // 原假设下的标准误（用于检验统计量）
+    const seEst = Math.sqrt(phat * (1 - phat) / n);    // 观测标准误（用于置信区间, Wald）
+    const z = se0 > 0 ? (phat - p0) / se0 : 0;
+    const p = pValue(z, tail);
+    const zc = normInv(1 - (tail === 'two' ? alpha / 2 : alpha));
+    return {
+        phat, p0, est: phat - p0,
+        ciLow: (phat - p0) - zc * seEst,
+        ciHigh: (phat - p0) + zc * seEst,
+        z, p, se0, seEst, zc
+    };
+}
+
+// 双样本 z 比例检验：p̂1 - p̂2
+function testTwo(x1, n1, x2, n2, alpha, tail) {
+    const p1 = x1 / n1, p2 = x2 / n2;
+    const diff = p1 - p2;
+    const pPool = (x1 + x2) / (n1 + n2);
+    const sePool = Math.sqrt(pPool * (1 - pPool) * (1 / n1 + 1 / n2)); // 合并标准误（检验统计量）
+    const seDiff = Math.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2); // 非合并标准误（置信区间）
+    const z = sePool > 0 ? diff / sePool : 0;
+    const p = pValue(z, tail);
+    const zc = normInv(1 - (tail === 'two' ? alpha / 2 : alpha));
+    return {
+        p1, p2, est: diff,
+        ciLow: diff - zc * seDiff,
+        ciHigh: diff + zc * seDiff,
+        z, p, pPool, sePool, seDiff, zc
+    };
+}
+
+// ====== 表格输入 ======
+const COLS = {
+    single: [
+        { key: 'metric', label: '指标名称', type: 'text', ph: '例如: 转化率', cls: 'metric-input' },
+        { key: 'x', label: '成功数 x', type: 'number', ph: '860' },
+        { key: 'n', label: '样本量 n', type: 'number', ph: '2000' },
+        { key: 'p0', label: '基准 p₀(%)', type: 'number', ph: '默认' }
+    ],
+    two: [
+        { key: 'metric', label: '指标名称', type: 'text', ph: '例如: 点击率', cls: 'metric-input' },
+        { key: 'x1', label: 'A 成功数 x₁', type: 'number', ph: '1240' },
+        { key: 'n1', label: 'A 样本量 n₁', type: 'number', ph: '8000' },
+        { key: 'x2', label: 'B 成功数 x₂', type: 'number', ph: '1456' },
+        { key: 'n2', label: 'B 样本量 n₂', type: 'number', ph: '8000' }
+    ]
+};
+
+function renderHead() {
+    const cols = COLS[testType];
+    document.getElementById('data-thead').innerHTML =
+        '<tr>' + cols.map(c => `<th>${c.label}</th>`).join('') + '<th style="width:48px"></th></tr>';
+}
+
+function makeRow(data = {}) {
+    const cols = COLS[testType];
+    const tr = document.createElement('tr');
+    tr.innerHTML = cols.map(c =>
+        `<td><input type="${c.type}" data-key="${c.key}" class="${c.cls || ''}" placeholder="${c.ph}"
+            ${c.type === 'number' ? 'step="any" min="0"' : ''} value="${data[c.key] != null ? data[c.key] : ''}"></td>`
+    ).join('') + '<td><button class="row-del" title="删除" onclick="this.closest(\'tr\').remove()">✕</button></td>';
+    return tr;
+}
+
+function addRow(data) { document.getElementById('data-tbody').appendChild(makeRow(data)); }
+
+function clearRows() {
+    document.getElementById('data-tbody').innerHTML = '';
+    addRow();
+    document.getElementById('results').classList.remove('visible');
+    setCsvStatus('', '');
+}
+
+function getRows() {
+    const cols = COLS[testType];
+    const rows = [];
+    document.querySelectorAll('#data-tbody tr').forEach(tr => {
+        const obj = {};
+        let hasData = false;
+        tr.querySelectorAll('input').forEach(inp => {
+            const v = inp.value.trim();
+            if (v !== '' && inp.dataset.key !== 'metric') hasData = true;
+            obj[inp.dataset.key] = v;
+        });
+        if (hasData) rows.push(obj);
+    });
+    return rows;
+}
+
+function loadSample() {
+    const data = testType === 'single' ? SAMPLE_SINGLE : SAMPLE_TWO;
+    document.getElementById('data-tbody').innerHTML = '';
+    data.forEach(d => addRow(d));
+    setCsvStatus(`已加载 ${data.length} 行示例数据`, 'ok');
+    runTest();
+}
+
+// ====== CSV 解析 ======
+function parseCSV(text) {
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim() !== '');
+    if (!lines.length) return [];
+    const splitLine = l => l.split(',').map(s => s.trim().replace(/^"(.*)"$/, '$1'));
+    const rawHeader = splitLine(lines[0]);
+    const header = rawHeader.map(h => h.toLowerCase());
+
+    // 表头别名映射
+    const alias = {
+        metric: ['metric', 'name', '指标', '指标名称', '名称'],
+        x:  ['x', 'success', 'successes', '成功数', '成功'],
+        n:  ['n', 'total', '样本量', '总数'],
+        p0: ['p0', 'baseline', 'base', '基准', '基准比例'],
+        x1: ['x1', 'xa', 'a_x', '成功数a', 'a成功数', '成功数1'],
+        n1: ['n1', 'na', 'a_n', '样本量a', 'a样本量', '样本量1'],
+        x2: ['x2', 'xb', 'b_x', '成功数b', 'b成功数', '成功数2'],
+        n2: ['n2', 'nb', 'b_n', '样本量b', 'b样本量', '样本量2']
+    };
+    const findIdx = keys => { for (const k of keys) { const i = header.indexOf(k); if (i !== -1) return i; } return -1; };
+
+    const needed = testType === 'single' ? ['metric', 'x', 'n', 'p0'] : ['metric', 'x1', 'n1', 'x2', 'n2'];
+    const idx = {};
+    let headerMatched = false;
+    needed.forEach(k => { idx[k] = findIdx(alias[k]); if (idx[k] !== -1 && k !== 'metric') headerMatched = true; });
+
+    let dataLines = lines;
+    if (headerMatched) {
+        dataLines = lines.slice(1); // 有表头，跳过首行
+    } else {
+        // 无可识别表头 → 按位置解析
+        const order = testType === 'single' ? ['metric', 'x', 'n', 'p0'] : ['metric', 'x1', 'n1', 'x2', 'n2'];
+        order.forEach((k, i) => idx[k] = i);
+        // 若首行看起来像表头（含非数字的数值列）则跳过
+        const firstCells = splitLine(lines[0]);
+        const numKey = testType === 'single' ? idx.x : idx.x1;
+        if (firstCells[numKey] !== undefined && isNaN(parseFloat(firstCells[numKey]))) dataLines = lines.slice(1);
+    }
+
+    const out = [];
+    dataLines.forEach(line => {
+        const cells = splitLine(line);
+        const obj = {};
+        for (const k of needed) {
+            const i = idx[k];
+            obj[k] = (i !== -1 && cells[i] !== undefined) ? cells[i] : '';
+        }
+        out.push(obj);
+    });
+    return out;
+}
+
+function handleCSVText(text, fname) {
+    let rows;
+    try { rows = parseCSV(text); } catch (e) { setCsvStatus('CSV 解析失败：' + e.message, 'err'); return; }
+    if (!rows.length) { setCsvStatus('未在文件中找到有效数据行', 'err'); return; }
+    document.getElementById('data-tbody').innerHTML = '';
+    rows.forEach(r => addRow(r));
+    setCsvStatus(`已从 ${fname || 'CSV'} 导入 ${rows.length} 行数据`, 'ok');
+    runTest();
+}
+
+function setCsvStatus(msg, cls) {
+    const el = document.getElementById('csv-status');
+    el.textContent = msg;
+    el.className = 'csv-status' + (cls ? ' ' + cls : '');
+}
+
+// ====== 运行检验 ======
+function runTest() {
+    const alpha = parseFloat(document.getElementById('alpha').value) || 0.05;
+    const tail = document.getElementById('tail').value;
+    const defP0 = (parseFloat(document.getElementById('default-p0').value) || 0) / 100;
+    const rows = getRows();
+    if (!rows.length) { alert('请先录入或导入至少一行有效数据'); return; }
+
+    const results = [];
+    for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const metric = (r.metric && r.metric.trim()) || `指标 ${i + 1}`;
+        if (testType === 'single') {
+            const x = parseFloat(r.x), n = parseFloat(r.n);
+            let p0 = r.p0 !== '' && !isNaN(parseFloat(r.p0)) ? parseFloat(r.p0) / 100 : defP0;
+            if (!(n > 0) || !(x >= 0) || x > n) { alert(`第 ${i + 1} 行（${metric}）的 x/n 无效：需满足 0 ≤ x ≤ n 且 n>0`); return; }
+            if (!(p0 > 0 && p0 < 1)) { alert(`第 ${i + 1} 行（${metric}）的基准比例 p₀ 无效（需在 0-100% 之间）`); return; }
+            const t = testSingle(x, n, p0, alpha, tail);
+            results.push({ metric, raw: { x, n }, ...t, sig: t.p < alpha });
+        } else {
+            const x1 = parseFloat(r.x1), n1 = parseFloat(r.n1), x2 = parseFloat(r.x2), n2 = parseFloat(r.n2);
+            if (!(n1 > 0 && n2 > 0) || !(x1 >= 0 && x2 >= 0) || x1 > n1 || x2 > n2) {
+                alert(`第 ${i + 1} 行（${metric}）的样本数据无效：需满足 0 ≤ x ≤ n 且 n>0`); return;
+            }
+            const t = testTwo(x1, n1, x2, n2, alpha, tail);
+            results.push({ metric, raw: { x1, n1, x2, n2 }, ...t, sig: t.p < alpha });
+        }
+    }
+
+    renderSummary(results, alpha);
+    renderForest(results);
+    renderTable(results, alpha, tail);
+    renderFormula(alpha, tail);
+    document.getElementById('result-desc').textContent =
+        (testType === 'single' ? '单样本' : '双样本') + ` z 比例检验 · ${results.length} 个指标 · 置信度 ${((1 - alpha) * 100).toFixed(0)}%`;
+    document.getElementById('results').classList.add('visible');
+    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    trackEvent('run_test');
+}
+
+function renderSummary(results, alpha) {
+    const total = results.length;
+    const sig = results.filter(r => r.sig).length;
+    const up = results.filter(r => r.sig && r.est > 0).length;
+    const down = results.filter(r => r.sig && r.est < 0).length;
+    document.getElementById('summary-row').innerHTML = `
+        <div class="summary-card"><div class="s-label">指标总数</div><div class="s-value">${total}</div></div>
+        <div class="summary-card sig"><div class="s-label">显著</div><div class="s-value">${sig}</div></div>
+        <div class="summary-card nsig"><div class="s-label">不显著</div><div class="s-value">${total - sig}</div></div>
+        <div class="summary-card"><div class="s-label">↑ 升 / ↓ 降</div><div class="s-value" style="font-size:1.4rem;">
+            <span style="color:var(--accent-green)">${up}</span> / <span style="color:var(--accent-red)">${down}</span></div></div>`;
+}
+
+function colorFor(r) {
+    if (!r.sig) return 'var(--text-muted)';
+    return r.est > 0 ? 'var(--accent-green)' : 'var(--accent-red)';
+}
+
+// ====== 纵向森林图（SVG） ======
+function renderForest(results) {
+    const rowH = 46, padTop = 44, padBottom = 52;
+    const W = 860, labelW = 196, valW = 156;
+    const plotLeft = labelW, plotRight = W - valW, plotW = plotRight - plotLeft;
+    const H = padTop + results.length * rowH + padBottom;
+
+    // x 轴定义域
+    let vals = [0];
+    results.forEach(r => vals.push(r.ciLow, r.ciHigh, r.est));
+    let dmin = Math.min(...vals), dmax = Math.max(...vals);
+    if (dmin === dmax) { dmin -= 0.01; dmax += 0.01; }
+    const sp = dmax - dmin; dmin -= sp * 0.12; dmax += sp * 0.12;
+    const X = v => plotLeft + (v - dmin) / (dmax - dmin) * plotW;
+
+    const axisY = padTop + results.length * rowH + 8;
+    let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" font-family="JetBrains Mono, monospace">`;
+
+    // 网格 & x 轴刻度
+    const ticks = 5;
+    for (let i = 0; i <= ticks; i++) {
+        const v = dmin + (dmax - dmin) * i / ticks;
+        const px = X(v);
+        svg += `<line x1="${px}" y1="${padTop - 10}" x2="${px}" y2="${axisY}" stroke="#2a3441" stroke-width="1"/>`;
+        svg += `<text x="${px}" y="${axisY + 18}" fill="#6b7280" font-size="11" text-anchor="middle">${(v * 100).toFixed(1)}%</text>`;
+    }
+    svg += `<line x1="${plotLeft}" y1="${axisY}" x2="${plotRight}" y2="${axisY}" stroke="#2a3441" stroke-width="1"/>`;
+    svg += `<text x="${(plotLeft + plotRight) / 2}" y="${axisY + 40}" fill="#9ca3af" font-size="12" text-anchor="middle" font-family="Noto Sans SC, sans-serif">${testType === 'single' ? '观测比例 − 基准比例 (p̂ − p₀)' : '组间差异 (A − B)'}</text>`;
+
+    // 基准线（0）
+    const zx = X(0);
+    svg += `<line x1="${zx}" y1="${padTop - 10}" x2="${zx}" y2="${axisY}" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="5,4"/>`;
+
+    // 每行
+    results.forEach((r, i) => {
+        const cy = padTop + i * rowH + rowH / 2;
+        const col = colorFor(r);
+        const lo = X(r.ciLow), hi = X(r.ciHigh), pe = X(r.est);
+
+        // 指标名（左）
+        svg += `<text x="${plotLeft - 14}" y="${cy + 4}" fill="#e8eaed" font-size="12.5" text-anchor="end" font-family="Noto Sans SC, sans-serif">${escapeXml(clip(r.metric, 12))}</text>`;
+        // CI 横线 + 端帽
+        svg += `<line x1="${lo}" y1="${cy}" x2="${hi}" y2="${cy}" stroke="${col}" stroke-width="2.5" opacity="0.85"/>`;
+        svg += `<line x1="${lo}" y1="${cy - 6}" x2="${lo}" y2="${cy + 6}" stroke="${col}" stroke-width="2"/>`;
+        svg += `<line x1="${hi}" y1="${cy - 6}" x2="${hi}" y2="${cy + 6}" stroke="${col}" stroke-width="2"/>`;
+        // 点估计标记
+        svg += `<circle cx="${pe}" cy="${cy}" r="6" fill="${col}" stroke="#0a0e14" stroke-width="1.5"><title>${escapeXml(r.metric)}: ${(r.est*100).toFixed(2)}% [${(r.ciLow*100).toFixed(2)}%, ${(r.ciHigh*100).toFixed(2)}%], p=${fmtP(r.p)}</title></circle>`;
+        // 右侧数值
+        const txt = `${r.est >= 0 ? '+' : ''}${(r.est * 100).toFixed(2)}%  p=${fmtP(r.p)}`;
+        svg += `<text x="${plotRight + 12}" y="${cy + 4}" fill="${r.sig ? col : '#9ca3af'}" font-size="11.5" text-anchor="start">${txt}</text>`;
+    });
+
+    svg += `</svg>`;
+    document.getElementById('forest').innerHTML = svg;
+}
+
+function clip(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function escapeXml(s) { return String(s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fmtP(p) { return p < 0.0001 ? '<0.0001' : p.toFixed(4); }
+
+function renderTable(results, alpha, tail) {
+    const ciLabel = `${((1 - alpha) * 100).toFixed(0)}% CI`;
+    if (testType === 'single') {
+        document.getElementById('res-thead').innerHTML =
+            `<tr><th>指标</th><th>观测 p̂</th><th>基准 p₀</th><th>差异</th><th>${ciLabel}</th><th>z 值</th><th>p 值</th><th>结论</th></tr>`;
+        document.getElementById('res-tbody').innerHTML = results.map(r => {
+            return `<tr>
+                <td class="metric-cell">${escapeHtml(r.metric)}</td>
+                <td>${(r.phat * 100).toFixed(2)}%</td>
+                <td>${(r.p0 * 100).toFixed(2)}%</td>
+                <td>${r.est >= 0 ? '+' : ''}${(r.est * 100).toFixed(2)}%</td>
+                <td>[${(r.ciLow * 100).toFixed(2)}%, ${(r.ciHigh * 100).toFixed(2)}%]</td>
+                <td>${r.z.toFixed(3)}</td>
+                <td>${fmtP(r.p)}</td>
+                <td>${tagFor(r)}</td>
+            </tr>`;
+        }).join('');
+    } else {
+        document.getElementById('res-thead').innerHTML =
+            `<tr><th>指标</th><th>A 比例</th><th>B 比例</th><th>差异(A−B)</th><th>${ciLabel}</th><th>z 值</th><th>p 值</th><th>结论</th></tr>`;
+        document.getElementById('res-tbody').innerHTML = results.map(r => {
+            return `<tr>
+                <td class="metric-cell">${escapeHtml(r.metric)}</td>
+                <td>${(r.p1 * 100).toFixed(2)}%</td>
+                <td>${(r.p2 * 100).toFixed(2)}%</td>
+                <td>${r.est >= 0 ? '+' : ''}${(r.est * 100).toFixed(2)}%</td>
+                <td>[${(r.ciLow * 100).toFixed(2)}%, ${(r.ciHigh * 100).toFixed(2)}%]</td>
+                <td>${r.z.toFixed(3)}</td>
+                <td>${fmtP(r.p)}</td>
+                <td>${tagFor(r)}</td>
+            </tr>`;
+        }).join('');
+    }
+}
+
+function tagFor(r) {
+    if (!r.sig) return '<span class="tag ns">不显著</span>';
+    return r.est > 0 ? '<span class="tag sig-up">显著↑</span>' : '<span class="tag sig-down">显著↓</span>';
+}
+function escapeHtml(s) { return String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])); }
+
+function renderFormula(alpha, tail) {
+    const tailTxt = { two: '双侧', greater: '右侧', less: '左侧' }[tail];
+    let html;
+    if (testType === 'single') {
+        html = `<strong>单样本 z 比例检验</strong>（${tailTxt}，α=${alpha}）<br>
+            检验统计量：z = (p̂ − p₀) / √(p₀(1−p₀)/n)<br>
+            置信区间（Wald）：(p̂ − p₀) ± Z<sub>${tail === 'two' ? 'α/2' : 'α'}</sub> × √(p̂(1−p̂)/n)<br>
+            p 值：${tail === 'two' ? '2 × [1 − Φ(|z|)]' : (tail === 'greater' ? '1 − Φ(z)' : 'Φ(z)')}；当 p &lt; α 时拒绝原假设（认为显著）`;
+    } else {
+        html = `<strong>双样本 z 比例检验</strong>（${tailTxt}，α=${alpha}）<br>
+            合并比例：p̄ = (x₁ + x₂) / (n₁ + n₂)<br>
+            检验统计量：z = (p̂₁ − p̂₂) / √(p̄(1−p̄)(1/n₁ + 1/n₂))<br>
+            置信区间：(p̂₁ − p̂₂) ± Z<sub>${tail === 'two' ? 'α/2' : 'α'}</sub> × √(p̂₁(1−p̂₁)/n₁ + p̂₂(1−p̂₂)/n₂)<br>
+            p 值：${tail === 'two' ? '2 × [1 − Φ(|z|)]' : (tail === 'greater' ? '1 − Φ(z)' : 'Φ(z)')}；当 p &lt; α 时拒绝原假设（认为显著）`;
+    }
+    document.getElementById('formula').innerHTML = html;
+}
+
+// ====== CSV 模板下载 ======
+function downloadTemplate() {
+    let csv, fname;
+    if (testType === 'single') {
+        csv = 'metric,x,n,p0\n' + SAMPLE_SINGLE.map(d => `${d.metric},${d.x},${d.n},${d.p0}`).join('\n') + '\n';
+        fname = 'significance-single-sample-template.csv';
+    } else {
+        csv = 'metric,x1,n1,x2,n2\n' + SAMPLE_TWO.map(d => `${d.metric},${d.x1},${d.n1},${d.x2},${d.n2}`).join('\n') + '\n';
+        fname = 'significance-two-sample-template.csv';
+    }
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = fname; a.click();
+    URL.revokeObjectURL(url);
+}
+
+// ====== UI 切换 ======
+function switchTest(t) {
+    testType = t;
+    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.toggle('active', b.dataset.test === t));
+    document.getElementById('test-badge').textContent = t === 'single' ? '📍 单样本 z 比例检验' : '⚖️ 双样本 z 比例检验';
+    document.getElementById('single-baseline-group').style.display = t === 'single' ? 'flex' : 'none';
+    updateParamInfo();
+    updateDzHint();
+    renderHead();
+    clearRows();
+}
+
+function updateParamInfo() {
+    const el = document.getElementById('param-info');
+    if (testType === 'single') {
+        el.innerHTML = '<strong>💡 单样本检验：</strong>将每个指标的观测比例 p̂ = x/n 与基准比例 p₀ 比较，判断差异是否显著。CSV 列：<code>metric, x, n, p0</code>（p₀ 为百分数，可留空使用默认值）。';
+    } else {
+        el.innerHTML = '<strong>💡 双样本检验：</strong>比较两组（A/B）独立比例 p̂₁、p̂₂ 是否存在显著差异。CSV 列：<code>metric, x1, n1, x2, n2</code>。';
+    }
+}
+
+function updateDzHint() {
+    document.getElementById('dz-hint').textContent = testType === 'single'
+        ? '列格式：metric, x, n, p0'
+        : '列格式：metric, x1, n1, x2, n2';
+}
+
+// ====== 文件拖拽/选择 ======
+function setupDropzone() {
+    const dz = document.getElementById('dropzone');
+    const fileInput = document.getElementById('csv-file');
+    dz.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => { if (e.target.files[0]) readFile(e.target.files[0]); fileInput.value = ''; });
+    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); }));
+    dz.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) readFile(f); });
+}
+
+function readFile(file) {
+    if (!/\.csv$/i.test(file.name)) { setCsvStatus('请选择 .csv 文件', 'err'); return; }
+    const reader = new FileReader();
+    reader.onload = e => handleCSVText(e.target.result, file.name);
+    reader.onerror = () => setCsvStatus('文件读取失败', 'err');
+    reader.readAsText(file, 'UTF-8');
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    updateParamInfo();
+    updateDzHint();
+    renderHead();
+    addRow();
+    setupDropzone();
+});
+</script>
+</body>
+</html>
