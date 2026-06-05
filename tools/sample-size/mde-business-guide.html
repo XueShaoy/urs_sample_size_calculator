@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MDE 图文讲解（业务版）</title>
+  <title>MDE 图文讲解</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <script>
     window.MathJax = {
@@ -211,6 +211,7 @@
         \mathrm{MDE} = \underbrace{Z}_{\text{要多严格}} \times \underbrace{\sqrt{\frac{p(1-p)}{n}}}_{\text{噪声有多大（SE）}}
         \]
       </div>
+      <div class="tip"><strong>适用范围提醒：</strong>这里的 \(p(1-p)\) 是比例指标（如转化率、通过率）的写法。若指标是均值（如客单价、停留时长），应把 SE 换成 \(\sigma/\sqrt{n}\)（双样本且两组样本量相近时常见 \(\sqrt{2}\sigma/\sqrt{n}\)）；样本较小时通常用 t 临界值而不是固定 Z。</div>
       <p><strong>零件一：SE（噪声大小）</strong> \(\sqrt{p(1-p)/n}\)</p>
       <ul class="key-list">
         <li>\(p(1-p)\)：指标自身不确定性，\(p=50\%\) 时最大。</li>
