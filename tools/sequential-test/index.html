@@ -111,7 +111,7 @@
         .action-row { display: flex; gap: 14px; margin-top: 28px; justify-content: flex-end; }
 
         .results-section { display: none; }
-        .results-section.visible { display: block; animation: fadeIn 0.3s ease; }
+        .results-section.visible { display: block; animation: fadeIn 0.3s ease; margin-top: 32px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
@@ -163,13 +163,56 @@
         .watermark {
             position: fixed; bottom: 16px; right: 20px;
             font-size: 0.7rem; color: var(--text-muted); opacity: 0.5;
-            letter-spacing: 0.02em; pointer-events: none; z-index: 100;
+            font-family: 'Noto Sans SC', sans-serif; letter-spacing: 0.02em;
+            z-index: 100; cursor: pointer; transition: opacity 0.2s, color 0.2s;
+            background: none; border: none; padding: 4px 0;
         }
+        .watermark:hover { opacity: 1; color: var(--accent-cyan); }
 
-        .watermark {
-            position: fixed; bottom: 16px; right: 20px;
-            font-size: 0.7rem; color: var(--text-muted); opacity: 0.5;
-            letter-spacing: 0.02em; pointer-events: none; z-index: 100;
+        .changelog-overlay {
+            display: none; position: fixed; inset: 0; z-index: 10000;
+            background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
+            align-items: center; justify-content: center; padding: 24px;
+        }
+        .changelog-overlay.open { display: flex; }
+        .changelog-modal {
+            position: relative; background: var(--bg-card); border: 1px solid var(--border-color);
+            border-radius: 20px; width: 100%; max-width: 560px; max-height: 80vh;
+            display: flex; flex-direction: column; box-shadow: var(--shadow); animation: fadeIn 0.25s ease;
+        }
+        .changelog-header {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 24px 28px 16px; border-bottom: 1px solid var(--border-color); flex-shrink: 0;
+        }
+        .changelog-title { font-size: 1.1rem; font-weight: 600; }
+        .changelog-close {
+            background: var(--bg-tertiary); border: 1px solid var(--border-color);
+            color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px;
+            cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+        }
+        .changelog-close:hover { color: var(--text-primary); border-color: var(--accent-blue); }
+        .changelog-body { padding: 20px 28px 28px; overflow-y: auto; flex: 1; }
+        .changelog-version { margin-bottom: 24px; }
+        .changelog-version:last-child { margin-bottom: 0; }
+        .changelog-version-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .changelog-ver-tag {
+            font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 600;
+            color: var(--accent-cyan); background: rgba(6,182,212,0.1);
+            padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(6,182,212,0.25);
+        }
+        .changelog-date { font-size: 0.78rem; color: var(--text-muted); }
+        .changelog-group { margin-bottom: 8px; }
+        .changelog-group-label {
+            font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);
+            text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+        }
+        .changelog-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+        .changelog-list li {
+            font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;
+            padding-left: 14px; position: relative;
+        }
+        .changelog-list li::before {
+            content: '·'; position: absolute; left: 0; color: var(--accent-blue); font-weight: 700;
         }
 
         /* Guide styles */
@@ -195,7 +238,71 @@
     </style>
 </head>
 <body>
-    <div class="watermark">URS数据科学团队 © 2026</div>
+    <button class="watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026 | v1.1.0</button>
+
+    <div class="changelog-overlay" id="changelog-overlay" onclick="closeChangelogOnOverlay(event)">
+        <div class="changelog-modal" role="dialog" aria-labelledby="changelog-title">
+            <div class="changelog-header">
+                <span class="changelog-title" id="changelog-title">📋 更新日志 · 序贯检验</span>
+                <button class="changelog-close" onclick="closeChangelog()" aria-label="关闭">✕</button>
+            </div>
+            <div class="changelog-body">
+                <div class="changelog-version">
+                    <div class="changelog-version-header">
+                        <span class="changelog-ver-tag">v1.1.0</span>
+                        <span class="changelog-date">2026-06-05</span>
+                    </div>
+                    <div class="changelog-group">
+                        <div class="changelog-group-label">新增</div>
+                        <ul class="changelog-list">
+                            <li>水印增加版本号，点击弹出更新日志</li>
+                        </ul>
+                    </div>
+                    <div class="changelog-group">
+                        <div class="changelog-group-label">改进</div>
+                        <ul class="changelog-list">
+                            <li>操作按钮与计算结果区域增加间距，提升可读性</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="changelog-version">
+                    <div class="changelog-version-header">
+                        <span class="changelog-ver-tag">v1.0.1</span>
+                        <span class="changelog-date">2026-06-03</span>
+                    </div>
+                    <div class="changelog-group">
+                        <div class="changelog-group-label">修复</div>
+                        <ul class="changelog-list">
+                            <li>移除 compute 中重复的 sides2 声明</li>
+                        </ul>
+                    </div>
+                    <div class="changelog-group">
+                        <div class="changelog-group-label">改进</div>
+                        <ul class="changelog-list">
+                            <li>目录重构：迁入 tools/sequential-test/，适配 GitHub Pages</li>
+                            <li>更新 Google Analytics 测量 ID</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="changelog-version">
+                    <div class="changelog-version-header">
+                        <span class="changelog-ver-tag">v1.0.0</span>
+                        <span class="changelog-date">2026-06-03</span>
+                    </div>
+                    <div class="changelog-group">
+                        <div class="changelog-group-label">初始发布</div>
+                        <ul class="changelog-list">
+                            <li>O'Brien-Fleming / Pocock α 消费函数早停边界</li>
+                            <li>支持设置中期分析次数、边界图可视化</li>
+                            <li>解决多次窥探导致的 I 类错误膨胀问题</li>
+                            <li>接入 URS DS Tools 首页</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <a class="home-link" href="../../index.html">← 返回首页</a>
 
     <div class="container">
@@ -727,6 +834,19 @@ function toggleGuide() {
     body.style.display = open ? 'none' : 'block';
     arrow.style.transform = open ? '' : 'rotate(180deg)';
 }
+
+function openChangelog() {
+    document.getElementById('changelog-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+}
+function closeChangelog() {
+    document.getElementById('changelog-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+}
+function closeChangelogOnOverlay(e) {
+    if (e.target.id === 'changelog-overlay') closeChangelog();
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChangelog(); });
 </script>
 </body>
 </html>

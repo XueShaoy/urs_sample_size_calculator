@@ -229,7 +229,7 @@
         
         /* Results */
         .results-section { display: none; }
-        .results-section.visible { display: block; animation: fadeIn 0.4s ease; }
+        .results-section.visible { display: block; animation: fadeIn 0.4s ease; margin-top: 32px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
         
         .result-summary {
@@ -368,7 +368,7 @@
     <div class="changelog-overlay" id="changelog-overlay" onclick="closeChangelogOnOverlay(event)">
         <div class="changelog-modal" role="dialog" aria-labelledby="changelog-title">
             <div class="changelog-header">
-                <span class="changelog-title" id="changelog-title">📋 更新日志</span>
+                <span class="changelog-title" id="changelog-title">📋 更新日志 · 样本量计算器</span>
                 <button class="changelog-close" onclick="closeChangelog()" aria-label="关闭">✕</button>
             </div>
             <div class="changelog-body">
@@ -392,6 +392,7 @@
                             <li>分页面信息填写完整时，「总体观测目标 p」改为可选项；未填时顶部提示，各页面详情仍正常计算</li>
                             <li>「同时观测指标数 k」及 Bonferroni 校正仅作用于顶部整体结果，k&gt;1 时隐藏分页面配置</li>
                             <li>表头浮窗改为固定定位，修复左侧裁切导致显示不完整的问题</li>
+                            <li>操作按钮与计算结果区域增加间距，提升可读性</li>
                         </ul>
                     </div>
                 </div>
