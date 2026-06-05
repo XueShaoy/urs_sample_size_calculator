@@ -356,11 +356,11 @@
                     <div id="m1-single-metric" style="margin-top:16px;">
                         <div class="form-grid">
                             <div class="form-group">
-                                <label>总体观测目标 p <span class="tooltip tip-right" data-tip="预期的比例值，如满意率、转化率等。填写0-100之间的百分比。">ⓘ</span></label>
-                                <div class="input-suffix" data-suffix="%"><input type="number" id="m1-p" placeholder="例如: 70" step="0.1" min="0" max="100"></div>
+                                <label>总体观测目标 p <span class="tooltip tip-right" data-tip="预期的比例值，如满意率、转化率等，填写0-100。仅用于「整体单池」最小样本量估算。若已在下方填写分页面信息，此项可不填——计算时会跳过整体单池结果并给出提示，各页面详情仍按整体 δ 正常计算。">ⓘ</span></label>
+                                <div class="input-suffix" data-suffix="%"><input type="number" id="m1-p" placeholder="可选, 例如: 70" step="0.1" min="0" max="100"></div>
                             </div>
                             <div class="form-group">
-                                <label>总体波动精度 δ (MDE) <span class="tooltip" data-tip="希望检测到的最小波动。如想检测1%的波动（70%→71%），填1。">ⓘ</span></label>
+                                <label>总体波动精度 δ (MDE) <span class="tooltip" data-tip="希望检测到的整体最小波动。如想检测1%的波动（70%→71%），填1。必填项：既用于整体单池估算，也用于按整体精度反推各页面所需样本量。">ⓘ</span></label>
                                 <div class="input-suffix" data-suffix="%"><input type="number" id="m1-delta" placeholder="例如: 1" step="0.1" min="0"></div>
                             </div>
                         </div>
@@ -896,7 +896,7 @@ function updateInfoBoxes() {
     
     if (scenario === 'monitoring') {
         m1.className = 'info-box';
-        m1.innerHTML = '<strong>💡 长期观测公式：</strong>n = Z²×p(1-p)/δ²，其中 Z = Z<sub>α/2</sub> + Z<sub>β</sub><br><strong>说明：</strong>配对样本（同一群体跨周期），单组样本量。';
+        m1.innerHTML = '<strong>💡 长期观测公式：</strong>n = Z²×p(1-p)/δ²，其中 Z = Z<sub>α/2</sub> + Z<sub>β</sub><br><strong>说明：</strong>配对样本（同一群体跨周期），单组样本量。分页面时按整体 δ 反推各页所需样本量，使加权整体 MDE 回算 ≈ δ。';
         m2.className = 'info-box';
         m2.innerHTML = '<strong>💡 长期观测公式：</strong>MDE = Z × √(p(1-p)/n)<br><strong>说明：</strong>可通过页面加权计算整体精度。';
     } else if (metricType === 'proportion') {
@@ -1052,29 +1052,45 @@ function calcMode1() {
         if (k === 1) {
         const p = (parseFloat(document.getElementById('m1-p').value) || 0) / 100;
         const delta = (parseFloat(document.getElementById('m1-delta').value) || 0) / 100;
+        const pages = getSelectedPages(1);
+        const hasPages = pages.length > 0;
+        const pValid = p > 0 && p < 1;
 
-        if (p <= 0 || p >= 1) { alert('请输入有效的 p 值 (0-100%)'); return; }
         if (delta <= 0) { alert('请输入有效的 MDE δ'); return; }
+        // 总体观测目标 p：分页面信息填写完整时为可选项
+        if (!pValid && !hasPages) { alert('请输入有效的 p 值 (0-100%)，或在下方填写分页面信息'); return; }
 
         const z = getZ(alpha, power);
         const za = normInv(1 - alpha/2), zb = normInv(power);
-        const n = calcN_single(p, delta, alpha, power);
-        const rawN = Math.ceil(z * z * variance(p) / (delta * delta));
-        const verifyMDE = calcMDE_single(p, n, alpha, power);
-        const clampNote = rawN < getMinSample()
-            ? `<div style="color:var(--accent-orange);margin-top:8px;">⚠️ 统计计算结果为 ${rawN}，低于最小样本量阈值，已自动补足至 ${getMinSample()}</div>`
-            : '';
 
-        html = `<div class="result-summary">
-            <div class="result-label">最小样本量（单组）</div>
-            <div class="result-value">${n.toLocaleString()}</div>
-            <div class="result-note">p=${(p*100).toFixed(1)}%, MDE=${(delta*100).toFixed(2)}%, α=${alpha}, Power=${power}${clampNote}</div>
-        </div>`;
+        if (pValid) {
+            const n = calcN_single(p, delta, alpha, power);
+            const rawN = Math.ceil(z * z * variance(p) / (delta * delta));
+            const verifyMDE = calcMDE_single(p, n, alpha, power);
+            const clampNote = rawN < getMinSample()
+                ? `<div style="color:var(--accent-orange);margin-top:8px;">⚠️ 统计计算结果为 ${rawN}，低于最小样本量阈值，已自动补足至 ${getMinSample()}</div>`
+                : '';
 
-        formula = `<strong>公式：</strong>n = Z² × p(1-p) / δ²<br>
-            <strong>其中：</strong>Z = Z<sub>α/2</sub> + Z<sub>β</sub> = ${za.toFixed(3)} + ${zb.toFixed(3)} = ${z.toFixed(3)}<br>
-            <strong>计算：</strong>n = ${z.toFixed(3)}² × ${p.toFixed(4)} × ${(1-p).toFixed(4)} / ${delta.toFixed(4)}² = ${n.toLocaleString()}<br>
-            <strong>验证：</strong>MDE = ${z.toFixed(3)} × √(${p.toFixed(4)}×${(1-p).toFixed(4)}/${n}) = ${(verifyMDE*100).toFixed(4)}%`;
+            html = `<div class="result-summary">
+                <div class="result-label">最小样本量（单组）</div>
+                <div class="result-value">${n.toLocaleString()}</div>
+                <div class="result-note">p=${(p*100).toFixed(1)}%, MDE=${(delta*100).toFixed(2)}%, α=${alpha}, Power=${power}${clampNote}</div>
+            </div>`;
+
+            formula = `<strong>公式：</strong>n = Z² × p(1-p) / δ²<br>
+                <strong>其中：</strong>Z = Z<sub>α/2</sub> + Z<sub>β</sub> = ${za.toFixed(3)} + ${zb.toFixed(3)} = ${z.toFixed(3)}<br>
+                <strong>计算：</strong>n = ${z.toFixed(3)}² × ${p.toFixed(4)} × ${(1-p).toFixed(4)} / ${delta.toFixed(4)}² = ${n.toLocaleString()}<br>
+                <strong>验证：</strong>MDE = ${z.toFixed(3)} × √(${p.toFixed(4)}×${(1-p).toFixed(4)}/${n}) = ${(verifyMDE*100).toFixed(4)}%`;
+        } else {
+            // p 未填写但分页面信息完整：跳过整体单池估算，仅给出提示，分页面表照常计算
+            html = `<div class="result-summary">
+                <div class="result-label">最小样本量（单组）</div>
+                <div class="result-value" style="font-size:1.3rem;color:var(--accent-orange);">需要填写「总体观测目标 p」</div>
+                <div class="result-note">未填写总体 p，已跳过整体单池估算；下方各页面详情按整体 δ=${(delta*100).toFixed(2)}% 与各页自身 p 计算。</div>
+            </div>`;
+
+            formula = `<strong>说明：</strong>「总体观测目标 p」为空。该项仅用于「整体单池」估算 n = Z²×p(1-p)/δ²；<br>由于分页面信息已填写完整，下方「各页面详情」会按各页自身 p 与整体 δ 反推所需样本量，可不依赖总体 p。`;
+        }
 
         renderMode1PageTable_Monitoring(alpha, power, delta);
 
@@ -1244,17 +1260,63 @@ function renderMode1PageTable_Monitoring(alpha, power, delta) {
     document.getElementById('m1-page-title').style.display = pages.length ? 'flex' : 'none';
     document.getElementById('m1-table-container').style.display = pages.length ? 'block' : 'none';
     if (!pages.length) return;
-    
-    document.getElementById('m1-thead').innerHTML = '<tr><th>页面</th><th>权重 w</th><th>页面δ</th><th>比例 p</th><th>最小样本量</th><th>预估样本量</th><th>状态</th></tr>';
+
+    const z = getZ(alpha, power);
+    const k = pages.length;
+    const minS = getMinSample();
+
+    document.getElementById('m1-thead').innerHTML = '<tr><th>页面</th><th>权重 w</th><th>比例 p</th><th>所需样本量</th><th>页面MDE</th><th>预估样本量</th><th>状态</th></tr>';
+
     let tbody = '';
+    let sumW = 0, sumN = 0, sumEst = 0, varSum = 0;
+    let anyEst = false, allSufficient = true;
+
     for (const pg of pages) {
-        const pageDelta = delta / pg.w;
-        const pageN = calcN_single(pg.p, pageDelta, alpha, power);
-        const status = pg.n > 0 ? (pg.n >= pageN ? '✓ 充足' : '⚠ 不足') : '--';
-        const statusClass = pg.n > 0 ? (pg.n >= pageN ? 'success-cell' : 'warning-cell') : '';
-        const nDisplay = pg.n > 0 ? pg.n.toLocaleString() : '--';
-        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pageDelta*100).toFixed(2)}%</td><td>${(pg.p*100).toFixed(1)}%</td><td class="highlight-cell">${pageN.toLocaleString()}</td><td>${nDisplay}</td><td class="${statusClass}">${status}</td></tr>`;
+        const a = pg.w * pg.w * variance(pg.p);
+        const rawN = k * a * z * z / (delta * delta);
+        const pageN = Math.max(Math.ceil(rawN), minS);
+        const pageMDE = z * Math.sqrt(variance(pg.p) / pageN);
+
+        sumW += pg.w;
+        sumN += pageN;
+        varSum += pg.w * pg.w * variance(pg.p) / pageN;
+
+        let status = '--', statusClass = '';
+        if (pg.n > 0) {
+            anyEst = true;
+            sumEst += pg.n;
+            const ok = pg.n >= pageN;
+            if (!ok) allSufficient = false;
+            status = ok ? '✓ 充足' : '⚠ 不足';
+            statusClass = ok ? 'success-cell' : 'warning-cell';
+        }
+        const nEstDisplay = pg.n > 0 ? pg.n.toLocaleString() : '--';
+
+        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pg.p*100).toFixed(1)}%</td><td class="highlight-cell">${pageN.toLocaleString()}</td><td>±${(pageMDE*100).toFixed(2)}%</td><td>${nEstDisplay}</td><td class="${statusClass}">${status}</td></tr>`;
     }
+
+    const overallMDE = z * Math.sqrt(varSum);
+    const wOk = Math.abs(sumW - 1) <= 0.01;
+    const wNote = wOk ? '' : ` <span style="color:var(--accent-orange);">(权重和≠1，整体口径可能失真)</span>`;
+    const estTotalDisplay = anyEst ? sumEst.toLocaleString() : '--';
+    const overallStatus = anyEst ? (allSufficient ? '✓ 充足' : '⚠ 不足') : '--';
+    const overallStatusClass = anyEst ? (allSufficient ? 'success-cell' : 'warning-cell') : '';
+
+    tbody += `<tr style="border-top:2px solid var(--accent-blue);font-weight:600;background:rgba(59,130,246,0.06);">
+        <td>合计</td>
+        <td>${sumW.toFixed(3)}${wNote}</td>
+        <td>—</td>
+        <td class="highlight-cell">${sumN.toLocaleString()}</td>
+        <td>±${(overallMDE*100).toFixed(2)}%</td>
+        <td>${estTotalDisplay}</td>
+        <td class="${overallStatusClass}">${overallStatus}</td>
+    </tr>`;
+
+    tbody += `<tr><td colspan="7" style="font-size:0.78rem;color:var(--text-secondary);background:transparent;line-height:1.6;padding-top:12px;">
+        分配方法：以整体目标 δ=${(delta*100).toFixed(2)}% 在 ${k} 个页面间均分方差预算，回算加权整体 MDE ≈ δ。<br>
+        各页所需样本量 nᵢ = k · wᵢ² · pᵢ(1-pᵢ) · Z² / δ²；页面MDE = Z·√(pᵢ(1-pᵢ)/nᵢ)；整体MDE = Z·√(Σ wᵢ²·pᵢ(1-pᵢ)/nᵢ)。
+    </td></tr>`;
+
     document.getElementById('m1-tbody').innerHTML = tbody;
 }
 
