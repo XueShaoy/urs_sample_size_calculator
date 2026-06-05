@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MDE 图文讲解（业务版）</title>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['\\(', '\\)']], displayMath: [['\\[', '\\]']] },
+      chtml: { scale: 1.02 }
+    };
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+  <style>
+    :root {
+      --bg-primary: #0a0e14;
+      --bg-secondary: #141a22;
+      --bg-card: #151c25;
+      --border-color: #2a3441;
+      --text-primary: #e8eaed;
+      --text-secondary: #9ca3af;
+      --accent-blue: #3b82f6;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-purple: #8b5cf6;
+      --accent-orange: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      line-height: 1.75;
+      background-image: radial-gradient(ellipse at 10% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
+                        radial-gradient(ellipse at 90% 80%, rgba(139,92,246,0.06) 0%, transparent 50%);
+    }
+    .container { max-width: 980px; margin: 0 auto; padding: 36px 20px 56px; }
+    .back-link {
+      display: inline-flex; align-items: center; gap: 8px;
+      color: var(--text-secondary); text-decoration: none; margin-bottom: 18px;
+      border: 1px solid var(--border-color); border-radius: 999px; padding: 8px 14px;
+      background: rgba(20,26,34,0.65);
+    }
+    .back-link:hover { color: var(--accent-cyan); border-color: var(--accent-blue); }
+    .hero {
+      background: linear-gradient(160deg, rgba(59,130,246,0.14), rgba(16,185,129,0.08));
+      border: 1px solid var(--border-color);
+      border-radius: 18px; padding: 28px 26px; margin-bottom: 24px;
+    }
+    .badge {
+      display: inline-block; font-size: 12px; letter-spacing: 0.04em;
+      color: var(--accent-cyan); background: rgba(6,182,212,0.14);
+      border: 1px solid rgba(6,182,212,0.3); border-radius: 999px; padding: 4px 10px;
+      margin-bottom: 10px;
+    }
+    h1 { margin: 0 0 8px; font-size: 32px; line-height: 1.3; }
+    .subtitle { margin: 0; color: var(--text-secondary); }
+    .toc, .card {
+      background: var(--bg-card); border: 1px solid var(--border-color);
+      border-radius: 16px; padding: 18px 20px; margin-top: 16px;
+    }
+    .toc h2, .card h2 { margin-top: 0; font-size: 18px; }
+    .card h2 { margin-bottom: 10px; }
+    .toc a { color: #93c5fd; text-decoration: none; }
+    .toc a:hover { color: var(--accent-cyan); }
+    .toc ul { margin: 10px 0 0; padding-left: 20px; }
+    .card h3 { margin-bottom: 8px; color: #c4b5fd; }
+    .card p { margin: 10px 0; }
+    .figure {
+      margin: 14px 0 8px; border: 1px solid var(--border-color); border-radius: 12px;
+      overflow: hidden; background: #0f141b;
+    }
+    .figure img { width: 100%; display: block; }
+    .figure-caption {
+      margin: 0; padding: 10px 12px; font-size: 13px; color: var(--text-secondary);
+      border-top: 1px solid var(--border-color);
+      background: rgba(20,26,34,0.6);
+    }
+    .tip {
+      border-left: 4px solid var(--accent-green);
+      background: rgba(16,185,129,0.1);
+      padding: 12px 14px; border-radius: 8px; margin-top: 10px;
+    }
+    .formula {
+      background: #111827; border: 1px solid var(--border-color); border-radius: 10px;
+      padding: 12px 14px; overflow-x: auto; color: #bfdbfe;
+    }
+    .formula .mjx-container {
+      color: #bfdbfe !important;
+    }
+    .key-list { margin: 8px 0 0; padding-left: 18px; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 14px;
+    }
+    th, td {
+      border: 1px solid var(--border-color);
+      padding: 8px 10px;
+      vertical-align: top;
+    }
+    th {
+      background: rgba(59,130,246,0.12);
+      color: #bfdbfe;
+      text-align: left;
+    }
+    .quote {
+      border-left: 4px solid var(--accent-blue);
+      background: rgba(59,130,246,0.1);
+      padding: 10px 12px;
+      border-radius: 8px;
+      margin: 10px 0;
+    }
+    .footer-note {
+      margin-top: 18px; color: var(--text-secondary); font-size: 13px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a class="back-link" href="../../index.html">← 返回 URS DS Tools 首页</a>
+
+    <section class="hero" id="top">
+      <span class="badge">业务讲解</span>
+      <h1>MDE 是什么？怎么算出来的？</h1>
+      <p class="subtitle">—— MDE 通俗讲解</p>
+      <div class="quote">
+        一句话先记住：<strong>MDE = 我们的测量工具能“看清”的最小变化。</strong><br>
+        比它更小的变化，会被数据天然的“抖动”淹没，看不出来。
+      </div>
+    </section>
+
+    <section class="toc">
+      <h2>文章目录</h2>
+      <ul>
+        <li><a href="#why">这份文档想解决的困惑</a></li>
+        <li><a href="#step1">第 1 步：听不清的悄悄话</a></li>
+        <li><a href="#step2">第 2 步：指标天生会抖（抽样噪声）</a></li>
+        <li><a href="#step3">第 3 步：样本越多，抖动越小</a></li>
+        <li><a href="#step4">第 4 步：MDE 正式登场</a></li>
+        <li><a href="#step5">第 5 步：拆开公式</a></li>
+        <li><a href="#step6">第 6 步：Z 是什么</a></li>
+        <li><a href="#step7">第 7 步：反推样本量（单样本 + Power）</a></li>
+        <li><a href="#appendix">附：多页面合成整体 MDE</a></li>
+        <li><a href="#summary">一页总结</a></li>
+      </ul>
+    </section>
+
+    <section class="card" id="why">
+      <h2>这份文档想解决的困惑</h2>
+      <p>业务里我们经常会问：</p>
+      <ul class="key-list">
+        <li>“满意率这周 70%，上周 71%，是不是变差了？”</li>
+        <li>“做了个改动，转化率涨了 0.3%，到底算不算涨了？”</li>
+      </ul>
+      <p>很多时候答案是：<strong>这点变化分辨不出来，因为它比数据本身的随机抖动还小。</strong></p>
+      <p>MDE（Minimum Detectable Effect）就是用来回答：</p>
+      <div class="quote">在当前样本量下，至少要变多少，我们才敢说“它真的变了”？</div>
+    </section>
+
+    <section class="card" id="step1">
+      <h2>第 1 步：一个生活比喻 —— 听不清的悄悄话</h2>
+      <p>想象你在一个有背景噪音的房间里听别人说话：</p>
+      <ul class="key-list">
+        <li>背景一直有“沙沙”杂音（数据随机抖动 / 噪声）。</li>
+        <li>对方说话太小声，你听不清。</li>
+        <li>只有声音足够大，盖过噪音，你才能确认听到了什么。</li>
+      </ul>
+      <div class="tip">
+        MDE 就是“能被听清的最小音量”：背景越吵（抖动越大）→ MDE 越大；样本越多（听得更久）→ MDE 越小。
+      </div>
+    </section>
+
+    <section class="card" id="step2">
+      <h2>第 2 步：指标天生就会“抖” —— 抽样噪声</h2>
+      <p>就算真实满意率一点没变，你每天测出来的数字也不会完全一样。因为每天抽到的人不同，结果自然会浮动。</p>
+      <div class="figure">
+        <img src="assets/mde-blog/step2-daily-jitter.png" alt="真实值不变但每日观测抖动图">
+        <p class="figure-caption">模拟：真实满意率固定 70%，每天抽 500 人，测得结果仍会上下波动。</p>
+      </div>
+    </section>
+
+    <section class="card" id="step3">
+      <h2>第 3 步：样本越多，抖动越小</h2>
+      <p>问 10 个人，1 个人改主意会带来 10% 波动；问 10000 个人，1 个人影响几乎可忽略。</p>
+      <div class="figure">
+        <img src="assets/mde-blog/step3-sample-size-compare.png" alt="不同样本量下抖动对比图">
+        <p class="figure-caption">同样真实值 70%，样本从 100 到 5000，曲线明显变平。</p>
+      </div>
+      <p>核心规律：<strong>抖动大约与 \(1/\sqrt{n}\) 成正比</strong>。样本翻 4 倍，抖动大约减半。</p>
+    </section>
+
+    <section class="card" id="step4">
+      <h2>第 4 步：MDE 正式登场 —— 变化要“盖过”噪声</h2>
+      <p>真实变化如果太小（比如 70% → 70.3%），可能淹没在噪声里；变化够大（比如 70% → 75%），才能被可靠识别。</p>
+      <p><strong>刚好能被分辨出来的临界变化幅度，就是 MDE。</strong></p>
+      <div class="figure">
+        <img src="assets/mde-blog/step4-mde-threshold.png" alt="MDE临界线与噪声分布图">
+        <p class="figure-caption">超过 ±MDE 临界线，才更有把握判定“真的变了”。</p>
+      </div>
+    </section>
+
+    <section class="card" id="step5">
+      <h2>第 5 步：拆开公式 —— MDE 只由两块拼成</h2>
+      <div class="formula">
+        \[
+        \mathrm{MDE} = \underbrace{Z}_{\text{要多严格}} \times \underbrace{\sqrt{\frac{p(1-p)}{n}}}_{\text{噪声有多大（SE）}}
+        \]
+      </div>
+      <p><strong>零件一：SE（噪声大小）</strong> \(\sqrt{p(1-p)/n}\)</p>
+      <ul class="key-list">
+        <li>\(p(1-p)\)：指标自身不确定性，\(p=50\%\) 时最大。</li>
+        <li>\(n\)：样本量，越大噪声越小。</li>
+      </ul>
+      <p><strong>把 SE 当成“测量尺子的最小刻度”更好理解：</strong>SE 越大，尺子刻度越粗；SE 越小，尺子刻度越细，越容易分清小变化。</p>
+      <table>
+        <thead><tr><th>概念</th><th>直观含义</th><th>在这里的作用</th></tr></thead>
+        <tbody>
+          <tr><td>标准差（SD）</td><td>用户个体之间天然差异有多大</td><td>描述“人和人差异”</td></tr>
+          <tr><td>标准误（SE）</td><td>同样条件下重复抽样时，样本均值/比例会抖多大</td><td>描述“估计值不稳定性”</td></tr>
+        </tbody>
+      </table>
+      <p>业务上可以这样记：<strong>SD 是人群本身的散，SE 是我们测量结果的晃。</strong> MDE 关心的是“能否看清变化”，所以核心是 SE，不是 SD。</p>
+      <p>为什么 SE 会随样本量变小？因为</p>
+      <div class="formula">
+        \[
+        \mathrm{SE}=\sqrt{\frac{p(1-p)}{n}} \propto \frac{1}{\sqrt{n}}
+        \]
+      </div>
+      <ul class="key-list">
+        <li>样本量变成 4 倍，SE 约减半；</li>
+        <li>样本量变成 9 倍，SE 约变成 1/3；</li>
+        <li>所以“多加一点样本”收益会递减，前期提升最明显。</li>
+      </ul>
+      <p><strong>零件二：Z（你要多严格）</strong>，要求越严格，Z 越大，MDE 也越大。</p>
+      <div class="figure">
+        <img src="assets/mde-blog/step5-mde-components.png" alt="MDE组成拆解图">
+        <p class="figure-caption">左图看两块零件，右图看“SE × Z”得到最终 MDE。</p>
+      </div>
+    </section>
+
+    <section class="card" id="step6">
+      <h2>第 6 步：Z 是什么？—— “你要多严格”的旋钮</h2>
+      <p>Z 本质上是把“你要多严格”翻译成数字的旋钮。它由两种把握度组成：</p>
+      <table>
+        <thead><tr><th>名字</th><th>通俗说法</th><th>常用值</th><th>对应 Z 分量</th></tr></thead>
+        <tbody>
+          <tr><td>显著性 \(\alpha\)</td><td>不想虚惊：没变却误判成变了</td><td>5%</td><td>\(Z_{\alpha/2}=1.96\)</td></tr>
+          <tr><td>功效 Power</td><td>不想漏报：真变时能抓到</td><td>80%</td><td>\(Z_\beta=0.84\)</td></tr>
+        </tbody>
+      </table>
+      <div class="formula">
+        \[
+        Z = Z_{\alpha/2} + Z_{\beta}
+        \]
+      </div>
+      <div class="formula">
+        \[
+        \mathrm{Power} = 1-\beta
+        \]
+      </div>
+      <p>含义：当“真实变化确实存在”时，模型能成功判定“变了”的概率就是 Power；\(\beta\) 是漏报概率，所以两者互补。</p>
+      <p>常见对比：只控 \(\alpha\) 时 \(Z=1.96\)；同时控 \(\alpha=5\%\) 且 Power=80% 时 \(Z=2.80\)。</p>
+      <div class="figure">
+        <img src="assets/mde-blog/step6-alpha-beta-power.png" alt="alpha beta power 面积图">
+        <p class="figure-caption">蓝色面积是 \(\alpha\)（虚惊），红色面积是 \(\beta\)（漏报），绿线右侧是 Power（抓到真变化）。</p>
+      </div>
+      <h3>📖 这张图怎么看？—— 主要看“面积”，横轴只是定位</h3>
+      <table>
+        <thead><tr><th>图上元素</th><th>它代表什么</th><th>你要关注什么</th></tr></thead>
+        <tbody>
+          <tr><td>横轴</td><td>一次实验测出来的结果</td><td>只用来定位判定线，不是重点</td></tr>
+          <tr><td>黑色虚线</td><td>判定线：超过就说“变了”</td><td>线的位置反映严格程度（Z）</td></tr>
+          <tr><td>蓝色曲线</td><td>其实没变时的分布</td><td>看右侧蓝色阴影面积（\(\alpha\)）</td></tr>
+          <tr><td>绿色曲线</td><td>真的变了时的分布</td><td>看左侧红色面积（\(\beta\)）与右侧成功区（Power）</td></tr>
+        </tbody>
+      </table>
+      <ul class="key-list">
+        <li>蓝色阴影：\(\alpha\)（虚惊）。</li>
+        <li>红色阴影：\(\beta\)（漏报）。</li>
+        <li>绿色右侧：\(1-\beta\)（Power，抓到真变化的概率）。</li>
+      </ul>
+      <div class="tip">一句话记忆：横轴定位置，面积定概率。</div>
+    </section>
+
+    <section class="card" id="step7">
+      <h2>第 7 步：反过来用 —— 定好 MDE，倒推要多少样本</h2>
+      <p>在单样本波动观测里，也可以直接问：为了发现 ±1% 波动，且有 80% 把握抓到，需要多少样本？</p>
+      <div class="formula">
+        \[
+        \mathrm{MDE}=Z_{\text{total}}\sqrt{\frac{p(1-p)}{n}}
+        \]
+      </div>
+      <div class="formula">
+        \[
+        Z_{\text{total}} = z_{1-\alpha/2} + z_{\text{power}}
+        \]
+      </div>
+      <div class="formula">
+        \[
+        n=\frac{\left(z_{1-\alpha/2}+z_{\text{power}}\right)^2\cdot p(1-p)}{\mathrm{MDE}^2}
+        \]
+      </div>
+      <ul class="key-list">
+        <li>\(\alpha\)：控制虚惊（没变却报变）。</li>
+        <li>Power：控制不漏报（真变时抓到）。</li>
+      </ul>
+      <p>关键直觉：MDE 在分母且是平方。目标精度砍半（±1% → ±0.5%），样本量约翻 4 倍。</p>
+      <div class="figure">
+        <img src="assets/mde-blog/step7-mde-to-n.png" alt="目标MDE与样本量关系图">
+        <p class="figure-caption">MDE 越小，样本量上升越快；“看得更细”是昂贵的。</p>
+      </div>
+    </section>
+
+    <section class="card" id="appendix">
+      <h2>附：多个页面如何合成“整体 MDE”</h2>
+      <p>当整体指标由多个页面（如 L/D/B/O/M）按权重合成时，整体 MDE 不是简单平均，而是按方差合成：</p>
+      <div class="formula">
+        \[
+        \mathrm{整体\ MDE}=Z\sqrt{\sum_i w_i^2\cdot\frac{p_i(1-p_i)}{n_i}}
+        \]
+      </div>
+      <p>反推时先定整体目标 \(\delta\)，把总噪声预算 \(\delta^2/Z^2\) 按权重比例分给各页，权重更大的页通常需要更多样本。</p>
+      <div class="figure">
+        <img src="assets/mde-blog/appendix-multi-page.png" alt="多页面整体MDE合成图">
+        <p class="figure-caption">左图是各页面样本分配，右图是按方差份额堆叠后回算整体 MDE。</p>
+      </div>
+    </section>
+
+    <section class="card" id="summary">
+      <h2>总结</h2>
+      <p><strong>MDE = 在当前样本量下，你能“看清”的最小变化。</strong></p>
+      <ul class="key-list">
+        <li>先定业务有意义的最小变化（MDE），再算要多少样本。</li>
+        <li>MDE 由两块组成：\(Z\)（严格程度）和 \(\sqrt{p(1-p)/n}\)（噪声大小）。</li>
+        <li>精度很贵：想看清的变化砍半，样本量约翻 4 倍。</li>
+        <li>多页面时，整体 MDE 由各页噪声按权重平方合成。</li>
+      </ul>
+      <div class="tip">MDE 就是这套数据能看清的最小刻度。想看得更细，要么接受更大样本成本，要么放宽严格度。</div>
+      <p class="footer-note"><a href="index.html" style="color:#93c5fd;text-decoration:none;">🔗 前往最小样本量计算工具</a></p>
+    </section>
+  </div>
+</body>
+</html>
