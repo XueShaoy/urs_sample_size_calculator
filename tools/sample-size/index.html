@@ -388,7 +388,7 @@
                     <div class="changelog-group">
                         <div class="changelog-group-label">改进</div>
                         <ul class="changelog-list">
-                            <li>分页面样本量改为按整体 δ 均分方差预算反推，合计行回算加权整体 MDE ≈ δ</li>
+                            <li>分页面样本量按整体 δ 与权重比例分配方差预算反推，合计行回算加权整体 MDE ≈ δ</li>
                             <li>分页面信息填写完整时，「总体观测目标 p」改为可选项；未填时顶部提示，各页面详情仍正常计算</li>
                             <li>「同时观测指标数 k」及 Bonferroni 校正仅作用于顶部整体结果，k&gt;1 时隐藏分页面配置</li>
                             <li>表头浮窗改为固定定位，修复左侧裁切导致显示不完整的问题</li>
@@ -1085,7 +1085,7 @@ function updateInfoBoxes() {
     
     if (scenario === 'monitoring') {
         m1.className = 'info-box';
-        m1.innerHTML = '<strong>💡 长期观测公式：</strong>n = Z²×p(1-p)/δ²，其中 Z = Z<sub>α/2</sub> + Z<sub>β</sub><br><strong>说明：</strong>配对样本（同一群体跨周期），单组样本量。分页面时按整体 δ 反推各页所需样本量，使加权整体 MDE 回算 ≈ δ。<br><strong>多指标：</strong>「同时观测指标数 k」及 Bonferroni 校正仅作用于顶部整体结果，不影响各页面详情。';
+        m1.innerHTML = '<strong>💡 长期观测公式：</strong>n = Z²×p(1-p)/δ²，其中 Z = Z<sub>α/2</sub> + Z<sub>β</sub><br><strong>说明：</strong>配对样本（同一群体跨周期），单组样本量。分页面时按整体 δ 与权重比例分配方差预算，反推各页所需样本量，使加权整体 MDE 回算 ≈ δ。<br><strong>多指标：</strong>「同时观测指标数 k」及 Bonferroni 校正仅作用于顶部整体结果，不影响各页面详情。';
         m2.className = 'info-box';
         m2.innerHTML = '<strong>💡 长期观测公式：</strong>MDE = Z × √(p(1-p)/n)<br><strong>说明：</strong>可通过页面加权计算整体精度。';
     } else if (metricType === 'proportion') {
@@ -1603,14 +1603,14 @@ function renderMode1PageTable_Monitoring(alpha, power, delta) {
     if (!pages.length) return;
 
     const z = getZ(alpha, power);
-    const k = pages.length;
+    const totalW = pages.reduce((s, pg) => s + pg.w, 0);
     const minS = getMinSample();
 
     document.getElementById('m1-thead').innerHTML = `<tr>
         <th>${thTip('页面', 'LDBOM 页面标识：L（列表）/ D（详情）/ B（购买）/ O（订单）/ M（我的）。')}</th>
         <th>${thTip('权重 w', '该页对整体指标的权重，反映该页在整体中的占比。建议各页权重之和为 1；若不为 1，合计行会提示整体口径可能失真。')}</th>
         <th>${thTip('比例 p', '该页自身的预期比例（如满意率、转化率），填写在页面配置中。用于反推该页所需样本量，与顶部「总体观测目标 p」相互独立。')}</th>
-        <th>${thTip('所需样本量', '在整体目标 δ 下，按方差预算均分到各页后反推的最小样本量。公式：nᵢ = k·wᵢ²·pᵢ(1-pᵢ)·Z²/δ²。')}</th>
+        <th>${thTip('所需样本量', '在整体目标 δ 下，按权重比例分配方差预算后反推的最小样本量。公式：nᵢ = wᵢ·(Σw)·pᵢ(1-pᵢ)·Z²/δ²。')}</th>
         <th>${thTip('页面MDE', '以该页所需样本量回算的单页检测精度：MDEᵢ = Z·√(pᵢ(1-pᵢ)/nᵢ)。合计行为加权整体 MDE，回算应≈整体目标 δ。')}</th>
         <th>${thTip('预估样本量', '页面配置中填写的计划或已有样本量（可选）。用于与「所需样本量」对比，判断该页流量是否充足。')}</th>
         <th>${thTip('状态', '预估样本量 ≥ 所需样本量 → 充足；否则 → 不足。未填预估样本量显示 --。合计行汇总各页预估总量。')}</th>
@@ -1621,8 +1621,7 @@ function renderMode1PageTable_Monitoring(alpha, power, delta) {
     let anyEst = false, allSufficient = true;
 
     for (const pg of pages) {
-        const a = pg.w * pg.w * variance(pg.p);
-        const rawN = k * a * z * z / (delta * delta);
+        const rawN = pg.w * totalW * variance(pg.p) * z * z / (delta * delta);
         const pageN = Math.max(Math.ceil(rawN), minS);
         const pageMDE = z * Math.sqrt(variance(pg.p) / pageN);
 
@@ -1662,8 +1661,8 @@ function renderMode1PageTable_Monitoring(alpha, power, delta) {
     </tr>`;
 
     tbody += `<tr><td colspan="7" style="font-size:0.78rem;color:var(--text-secondary);background:transparent;line-height:1.6;padding-top:12px;">
-        分配方法：以整体目标 δ=${(delta*100).toFixed(2)}% 在 ${k} 个页面间均分方差预算，回算加权整体 MDE ≈ δ。<br>
-        各页所需样本量 nᵢ = k · wᵢ² · pᵢ(1-pᵢ) · Z² / δ²；页面MDE = Z·√(pᵢ(1-pᵢ)/nᵢ)；整体MDE = Z·√(Σ wᵢ²·pᵢ(1-pᵢ)/nᵢ)。
+        分配方法：以整体目标 δ=${(delta*100).toFixed(2)}% 按权重比例分配方差预算（份额 wᵢ/Σw），回算加权整体 MDE ≈ δ。<br>
+        各页所需样本量 nᵢ = wᵢ · (Σw) · pᵢ(1-pᵢ) · Z² / δ²；页面MDE = Z·√(pᵢ(1-pᵢ)/nᵢ)；整体MDE = Z·√(Σ wᵢ²·pᵢ(1-pᵢ)/nᵢ)。
     </td></tr>`;
 
     document.getElementById('m1-tbody').innerHTML = tbody;
