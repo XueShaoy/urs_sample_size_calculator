@@ -1,0 +1,136 @@
+{
+  "version": "v1.2.0",
+  "scopes": {
+    "site": "全站",
+    "sample-size": "样本量计算器",
+    "power-analysis": "功效分析",
+    "sequential-test": "序贯检验",
+    "significance-test": "显著性检验"
+  },
+  "releases": [
+    {
+      "version": "v1.2.0",
+      "date": "2026-06-05",
+      "changes": {
+        "sample-size": [
+          { "group": "改进", "items": ["分页面方差预算改为按权重比例分配（份额 wᵢ/Σw），公式 nᵢ = wᵢ·Σw·pᵢ(1-pᵢ)·Z²/δ²"] }
+        ],
+        "power-analysis": [
+          { "group": "全站", "items": ["全站版本同步至 v1.2.0"] }
+        ],
+        "sequential-test": [
+          { "group": "全站", "items": ["全站版本同步至 v1.2.0"] }
+        ],
+        "significance-test": [
+          { "group": "全站", "items": ["全站版本同步至 v1.2.0"] }
+        ]
+      }
+    },
+    {
+      "version": "v1.1.0",
+      "date": "2026-06-05",
+      "changes": {
+        "site": [
+          { "group": "全站", "items": ["首页及全部工具页支持水印点击弹出更新日志", "各工具操作按钮与结果区间距优化"] }
+        ],
+        "sample-size": [
+          { "group": "新增", "items": ["计算结果支持下载 CSV（含基本信息、整体结果、各页面详情、置信区间等）", "各页面详情表头增加 ⓘ 浮窗，说明每列含义", "水印点击弹出更新日志"] },
+          { "group": "改进", "items": ["分页面样本量改为按整体 δ 均分方差预算反推，合计行回算加权整体 MDE ≈ δ", "分页面信息填写完整时，「总体观测目标 p」改为可选项；未填时顶部提示，各页面详情仍正常计算", "「同时观测指标数 k」及 Bonferroni 校正仅作用于顶部整体结果，k>1 时隐藏分页面配置", "表头浮窗改为固定定位，修复左侧裁切导致显示不完整的问题", "操作按钮与计算结果区域增加间距，提升可读性"] }
+        ],
+        "power-analysis": [
+          { "group": "新增", "items": ["新增右下角水印与版本号，点击弹出更新日志"] },
+          { "group": "改进", "items": ["操作按钮与计算结果区域增加间距，提升可读性"] }
+        ],
+        "sequential-test": [
+          { "group": "新增", "items": ["水印增加版本号，点击弹出更新日志"] },
+          { "group": "改进", "items": ["操作按钮与计算结果区域增加间距，提升可读性"] }
+        ],
+        "significance-test": [
+          { "group": "新增", "items": ["水印点击弹出更新日志"] },
+          { "group": "改进", "items": ["操作按钮与计算结果区域增加间距，提升可读性"] }
+        ]
+      }
+    },
+    {
+      "version": "v1.0.4",
+      "date": "2026-06-03",
+      "changes": {
+        "sample-size": [
+          { "group": "改进", "items": ["目录重构：工具页迁入 tools/sample-size/，适配 GitHub Pages 静态部署", "新增可配置「最小样本量」阈值（默认 200），低于阈值时自动补足并提示", "默认统计功效由 0.6 调整为 0.7", "更新 Google Analytics 测量 ID"] }
+        ]
+      }
+    },
+    {
+      "version": "v1.0.3",
+      "date": "2026-06-03",
+      "changes": {
+        "site": [
+          { "group": "新增工具", "items": ["显著性检验：单/双样本 z 检验、森林图、CSV 导入、多重比较校正", "功效分析：功效与 MDE 随天数变化曲线", "序贯检验：O'Brien-Fleming / Pocock 早停边界"] },
+          { "group": "改进", "items": ["目录重构：工具迁入 tools/ 目录，适配 GitHub Pages 静态部署", "样本量计算器支持可配置最小样本量阈值", "显著性检验支持事后功效、OR 列与结果 CSV 导出", "更新 Google Analytics 测量 ID"] }
+        ],
+        "sample-size": [
+          { "group": "改进", "items": ["接入 URS DS Tools 首页，新增「返回首页」导航", "新增 Google Analytics 使用行为埋点"] }
+        ]
+      }
+    },
+    {
+      "version": "v1.0.2",
+      "date": "2026-06-02",
+      "changes": {
+        "site": [
+          { "group": "新增", "items": ["新增 URS DS Tools 首页，统一工具导航入口", "各工具页新增「返回首页」导航与 Google Analytics 埋点"] }
+        ],
+        "sample-size": [
+          { "group": "新增", "items": ["长期观测支持多指标同时检验，自动应用 Bonferroni 校正（α_adj = α/k）", "k>1 时展示各指标所需样本量，取最大值作为最终样本量"] }
+        ],
+        "significance-test": [
+          { "group": "新增", "items": ["结果明细支持下载 CSV", "新增事后功效（Observed Power）计算与展示", "双样本结果表新增 OR（优势比）列"] }
+        ]
+      }
+    },
+    {
+      "version": "v1.0.1",
+      "date": "2026-06-01",
+      "changes": {
+        "site": [
+          { "group": "样本量计算器", "items": ["长期观测支持多指标同时检验，自动 Bonferroni 校正（α_adj = α/k）"] }
+        ],
+        "sample-size": [
+          { "group": "改进", "items": ["右下角水印增加版本号显示"] }
+        ],
+        "power-analysis": [
+          { "group": "改进", "items": ["目录重构：迁入 tools/power-analysis/，适配 GitHub Pages", "更新 Google Analytics 测量 ID"] }
+        ],
+        "sequential-test": [
+          { "group": "修复", "items": ["移除 compute 中重复的 sides2 声明"] },
+          { "group": "改进", "items": ["目录重构：迁入 tools/sequential-test/，适配 GitHub Pages", "更新 Google Analytics 测量 ID"] }
+        ],
+        "significance-test": [
+          { "group": "新增", "items": ["支持多重比较校正（Bonferroni / BH），结果表展示校正后 p 值"] },
+          { "group": "改进", "items": ["目录重构：迁入 tools/significance-test/，适配 GitHub Pages", "更新 Google Analytics 测量 ID"] }
+        ]
+      }
+    },
+    {
+      "version": "v1.0.0",
+      "date": "2026-04-30",
+      "changes": {
+        "site": [
+          { "group": "初始发布", "items": ["样本量计算器上线：长期观测 / AB 测试，精度↔样本量双向计算", "LDBOM 五页面加权配置，比例 / 均值指标支持", "部署至 GitHub Pages"] }
+        ],
+        "sample-size": [
+          { "group": "初始发布", "items": ["长期观测 / AB 测试双场景，精度→样本量 / 样本量→精度双向计算", "支持比例指标与均值指标", "LDBOM 五页面（L/D/B/O/M）加权配置与各页面详情", "AB 测试支持给定 nA 反推 nB，含公式推导与验证", "样本量→精度模式展示 90%/95%/99% 置信区间半宽", "适配 GitHub Pages 部署（index.html）"] }
+        ],
+        "power-analysis": [
+          { "group": "初始发布", "items": ["长期观测 / AB 测试双场景功效分析", "功效曲线与 MDE 曲线随实验天数变化可视化", "AB 测试支持「总量+比例」与「分组直接输入」两种流量模式", "接入 URS DS Tools 首页"] }
+        ],
+        "sequential-test": [
+          { "group": "初始发布", "items": ["O'Brien-Fleming / Pocock α 消费函数早停边界", "支持设置中期分析次数、边界图可视化", "解决多次窥探导致的 I 类错误膨胀问题", "接入 URS DS Tools 首页"] }
+        ],
+        "significance-test": [
+          { "group": "初始发布", "items": ["单样本 / 双样本 z 比例检验", "森林图可视化与汇总统计", "支持本地 CSV 数据导入，附带示例数据", "接入 URS DS Tools 首页"] }
+        ]
+      }
+    }
+  ]
+}

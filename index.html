@@ -119,177 +119,24 @@
             color: var(--text-muted); border: 1px solid var(--border-color);
         }
 
-        .watermark {
-            position: fixed; bottom: 16px; right: 20px;
-            font-size: 0.7rem; color: var(--text-muted); opacity: 0.5;
-            font-family: 'Noto Sans SC', sans-serif; letter-spacing: 0.02em;
-            z-index: 100; cursor: pointer; transition: opacity 0.2s, color 0.2s;
-            background: none; border: none; padding: 4px 0;
-        }
-        .watermark:hover { opacity: 1; color: var(--accent-cyan); }
-
-        .changelog-overlay {
-            display: none; position: fixed; inset: 0; z-index: 10000;
-            background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
-            align-items: center; justify-content: center; padding: 24px;
-        }
-        .changelog-overlay.open { display: flex; }
-        .changelog-modal {
-            position: relative; background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: 20px; width: 100%; max-width: 560px; max-height: 80vh;
-            display: flex; flex-direction: column; box-shadow: var(--shadow);
-            animation: fadeIn 0.25s ease;
-        }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .changelog-header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 24px 28px 16px; border-bottom: 1px solid var(--border-color); flex-shrink: 0;
-        }
-        .changelog-title { font-size: 1.1rem; font-weight: 600; }
-        .changelog-close {
-            background: var(--bg-tertiary); border: 1px solid var(--border-color);
-            color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px;
-            cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
-        }
-        .changelog-close:hover { color: var(--text-primary); border-color: var(--accent-blue); }
-        .changelog-body { padding: 20px 28px 28px; overflow-y: auto; flex: 1; }
-        .changelog-version { margin-bottom: 24px; }
-        .changelog-version:last-child { margin-bottom: 0; }
-        .changelog-version-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .changelog-ver-tag {
-            font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 600;
-            color: var(--accent-cyan); background: rgba(6,182,212,0.1);
-            padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(6,182,212,0.25);
-        }
-        .changelog-date { font-size: 0.78rem; color: var(--text-muted); }
-        .changelog-group { margin-bottom: 8px; }
-        .changelog-group-label {
-            font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);
-            text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
-        }
-        .changelog-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-        .changelog-list li {
-            font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;
-            padding-left: 14px; position: relative;
-        }
-        .changelog-list li::before {
-            content: '·'; position: absolute; left: 0; color: var(--accent-blue); font-weight: 700;
-        }
-
         @media (max-width: 768px) {
             .container { padding: 56px 16px 56px; }
             h1 { font-size: 2.25rem; }
             .tools-grid { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="stylesheet" href="assets/changelog.css">
 </head>
 <body>
-    <button class="watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026 | v1.2.0</button>
+    <button class="watermark" id="changelog-watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026</button>
 
     <div class="changelog-overlay" id="changelog-overlay" onclick="closeChangelogOnOverlay(event)">
         <div class="changelog-modal" role="dialog" aria-labelledby="changelog-title">
             <div class="changelog-header">
-                <span class="changelog-title" id="changelog-title">📋 更新日志 · URS DS Tools</span>
+                <span class="changelog-title" id="changelog-title">📋 更新日志</span>
                 <button class="changelog-close" onclick="closeChangelog()" aria-label="关闭">✕</button>
             </div>
-            <div class="changelog-body">
-                <div class="changelog-version">
-                    <div class="changelog-version-header">
-                        <span class="changelog-ver-tag">v1.2.0</span>
-                        <span class="changelog-date">2026-06-05</span>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">样本量计算器</div>
-                        <ul class="changelog-list">
-                            <li>分页面方差预算改为按权重比例分配（nᵢ = wᵢ·Σw·pᵢ(1-pᵢ)·Z²/δ²）</li>
-                            <li>新增分页面样本量推算方法论文档</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="changelog-version">
-                    <div class="changelog-version-header">
-                        <span class="changelog-ver-tag">v1.1.0</span>
-                        <span class="changelog-date">2026-06-05</span>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">全站</div>
-                        <ul class="changelog-list">
-                            <li>首页及全部工具页支持水印点击弹出更新日志</li>
-                            <li>各工具操作按钮与结果区间距优化</li>
-                        </ul>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">样本量计算器</div>
-                        <ul class="changelog-list">
-                            <li>计算结果支持下载 CSV</li>
-                            <li>分页面按整体 δ 反推各页样本量，合计行验证整体 MDE</li>
-                            <li>分页面完整时总体 p 改为可选项；表头浮窗说明与显示修复</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="changelog-version">
-                    <div class="changelog-version-header">
-                        <span class="changelog-ver-tag">v1.0.3</span>
-                        <span class="changelog-date">2026-06-03</span>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">新增工具</div>
-                        <ul class="changelog-list">
-                            <li>显著性检验：单/双样本 z 检验、森林图、CSV 导入、多重比较校正</li>
-                            <li>功效分析：功效与 MDE 随天数变化曲线</li>
-                            <li>序贯检验：O'Brien-Fleming / Pocock 早停边界</li>
-                        </ul>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">改进</div>
-                        <ul class="changelog-list">
-                            <li>目录重构：工具迁入 tools/ 目录，适配 GitHub Pages 静态部署</li>
-                            <li>样本量计算器支持可配置最小样本量阈值</li>
-                            <li>显著性检验支持事后功效、OR 列与结果 CSV 导出</li>
-                            <li>更新 Google Analytics 测量 ID</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="changelog-version">
-                    <div class="changelog-version-header">
-                        <span class="changelog-ver-tag">v1.0.2</span>
-                        <span class="changelog-date">2026-06-02</span>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">新增</div>
-                        <ul class="changelog-list">
-                            <li>新增 URS DS Tools 首页，统一工具导航入口</li>
-                            <li>各工具页新增「返回首页」导航与 Google Analytics 埋点</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="changelog-version">
-                    <div class="changelog-version-header">
-                        <span class="changelog-ver-tag">v1.0.1</span>
-                        <span class="changelog-date">2026-06-01</span>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">样本量计算器</div>
-                        <ul class="changelog-list">
-                            <li>长期观测支持多指标同时检验，自动 Bonferroni 校正（α_adj = α/k）</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="changelog-version">
-                    <div class="changelog-version-header">
-                        <span class="changelog-ver-tag">v1.0.0</span>
-                        <span class="changelog-date">2026-04-30</span>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">初始发布</div>
-                        <ul class="changelog-list">
-                            <li>样本量计算器上线：长期观测 / AB 测试，精度↔样本量双向计算</li>
-                            <li>LDBOM 五页面加权配置，比例 / 均值指标支持</li>
-                            <li>部署至 GitHub Pages</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+            <div class="changelog-body" id="changelog-body"></div>
         </div>
     </div>
 
@@ -371,19 +218,6 @@
         </div>
     </div>
 
-<script>
-function openChangelog() {
-    document.getElementById('changelog-overlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
-}
-function closeChangelog() {
-    document.getElementById('changelog-overlay').classList.remove('open');
-    document.body.style.overflow = '';
-}
-function closeChangelogOnOverlay(e) {
-    if (e.target.id === 'changelog-overlay') closeChangelog();
-}
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChangelog(); });
-</script>
+<script src="assets/changelog.js" data-page="home" data-base=""></script>
 </body>
 </html>

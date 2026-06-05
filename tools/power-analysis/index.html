@@ -163,137 +163,24 @@
         .mode-tab { padding: 6px 14px; border: none; background: transparent; color: var(--text-secondary); font-size: 0.8rem; font-family: inherit; cursor: pointer; border-radius: 5px; transition: all 0.2s; font-weight: 500; }
         .mode-tab.active { background: var(--bg-tertiary); color: var(--text-primary); }
 
-        .watermark {
-            position: fixed; bottom: 16px; right: 20px;
-            font-size: 0.7rem; color: var(--text-muted); opacity: 0.5;
-            font-family: 'Noto Sans SC', sans-serif; letter-spacing: 0.02em;
-            z-index: 100; cursor: pointer; transition: opacity 0.2s, color 0.2s;
-            background: none; border: none; padding: 4px 0;
-        }
-        .watermark:hover { opacity: 1; color: var(--accent-cyan); }
-
-        .changelog-overlay {
-            display: none; position: fixed; inset: 0; z-index: 10000;
-            background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
-            align-items: center; justify-content: center; padding: 24px;
-        }
-        .changelog-overlay.open { display: flex; }
-        .changelog-modal {
-            position: relative; background: var(--bg-card); border: 1px solid var(--border-color);
-            border-radius: 20px; width: 100%; max-width: 560px; max-height: 80vh;
-            display: flex; flex-direction: column; box-shadow: var(--shadow); animation: fadeIn 0.25s ease;
-        }
-        .changelog-header {
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 24px 28px 16px; border-bottom: 1px solid var(--border-color); flex-shrink: 0;
-        }
-        .changelog-title { font-size: 1.1rem; font-weight: 600; }
-        .changelog-close {
-            background: var(--bg-tertiary); border: 1px solid var(--border-color);
-            color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px;
-            cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
-        }
-        .changelog-close:hover { color: var(--text-primary); border-color: var(--accent-blue); }
-        .changelog-body { padding: 20px 28px 28px; overflow-y: auto; flex: 1; }
-        .changelog-version { margin-bottom: 24px; }
-        .changelog-version:last-child { margin-bottom: 0; }
-        .changelog-version-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
-        .changelog-ver-tag {
-            font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 600;
-            color: var(--accent-cyan); background: rgba(6,182,212,0.1);
-            padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(6,182,212,0.25);
-        }
-        .changelog-date { font-size: 0.78rem; color: var(--text-muted); }
-        .changelog-group { margin-bottom: 8px; }
-        .changelog-group-label {
-            font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);
-            text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
-        }
-        .changelog-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
-        .changelog-list li {
-            font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;
-            padding-left: 14px; position: relative;
-        }
-        .changelog-list li::before {
-            content: '·'; position: absolute; left: 0; color: var(--accent-blue); font-weight: 700;
-        }
-
         @media (max-width: 768px) {
             .scenario-switch { top: 56px; left: 10px; right: 10px; justify-content: center; }
             .home-link { top: 14px; right: 10px; padding: 8px 12px; font-size: 0.78rem; }
             .chart-grid { grid-template-columns: 1fr; }
         }
     </style>
+    <link rel="stylesheet" href="../../assets/changelog.css">
 </head>
 <body>
-    <button class="watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026 | v1.2.0</button>
+    <button class="watermark" id="changelog-watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026</button>
 
     <div class="changelog-overlay" id="changelog-overlay" onclick="closeChangelogOnOverlay(event)">
         <div class="changelog-modal" role="dialog" aria-labelledby="changelog-title">
             <div class="changelog-header">
-                <span class="changelog-title" id="changelog-title">📋 更新日志 · 功效分析</span>
+                <span class="changelog-title" id="changelog-title">📋 更新日志</span>
                 <button class="changelog-close" onclick="closeChangelog()" aria-label="关闭">✕</button>
             </div>
-            <div class="changelog-body">
-                <div class="changelog-version">
-                    <div class="changelog-version-header">
-                        <span class="changelog-ver-tag">v1.2.0</span>
-                        <span class="changelog-date">2026-06-05</span>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">全站</div>
-                        <ul class="changelog-list">
-                            <li>全站版本同步至 v1.2.0</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="changelog-version">
-                    <div class="changelog-version-header">
-                        <span class="changelog-ver-tag">v1.1.0</span>
-                        <span class="changelog-date">2026-06-05</span>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">新增</div>
-                        <ul class="changelog-list">
-                            <li>新增右下角水印与版本号，点击弹出更新日志</li>
-                        </ul>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">改进</div>
-                        <ul class="changelog-list">
-                            <li>操作按钮与计算结果区域增加间距，提升可读性</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="changelog-version">
-                    <div class="changelog-version-header">
-                        <span class="changelog-ver-tag">v1.0.1</span>
-                        <span class="changelog-date">2026-06-03</span>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">改进</div>
-                        <ul class="changelog-list">
-                            <li>目录重构：迁入 tools/power-analysis/，适配 GitHub Pages</li>
-                            <li>更新 Google Analytics 测量 ID</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="changelog-version">
-                    <div class="changelog-version-header">
-                        <span class="changelog-ver-tag">v1.0.0</span>
-                        <span class="changelog-date">2026-06-03</span>
-                    </div>
-                    <div class="changelog-group">
-                        <div class="changelog-group-label">初始发布</div>
-                        <ul class="changelog-list">
-                            <li>长期观测 / AB 测试双场景功效分析</li>
-                            <li>功效曲线与 MDE 曲线随实验天数变化可视化</li>
-                            <li>AB 测试支持「总量+比例」与「分组直接输入」两种流量模式</li>
-                            <li>接入 URS DS Tools 首页</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
+            <div class="changelog-body" id="changelog-body"></div>
         </div>
     </div>
 
@@ -797,19 +684,7 @@ function run() {
         gtag('event', 'run_power_analysis', { event_category: 'power_analysis', scenario });
     }
 }
-
-function openChangelog() {
-    document.getElementById('changelog-overlay').classList.add('open');
-    document.body.style.overflow = 'hidden';
-}
-function closeChangelog() {
-    document.getElementById('changelog-overlay').classList.remove('open');
-    document.body.style.overflow = '';
-}
-function closeChangelogOnOverlay(e) {
-    if (e.target.id === 'changelog-overlay') closeChangelog();
-}
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChangelog(); });
 </script>
+<script src="../../assets/changelog.js" data-page="power-analysis" data-base="../../"></script>
 </body>
 </html>

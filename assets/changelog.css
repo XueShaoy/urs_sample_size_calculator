@@ -1,0 +1,70 @@
+.watermark {
+    position: fixed; bottom: 16px; right: 20px;
+    font-size: 0.7rem; color: var(--text-muted); opacity: 0.5;
+    font-family: 'Noto Sans SC', sans-serif; letter-spacing: 0.02em;
+    z-index: 100; cursor: pointer; transition: opacity 0.2s, color 0.2s;
+    background: none; border: none; padding: 4px 0;
+}
+.watermark:hover { opacity: 1; color: var(--accent-cyan); }
+
+.changelog-overlay {
+    display: none; position: fixed; inset: 0; z-index: 10000;
+    background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);
+    align-items: center; justify-content: center; padding: 24px;
+}
+.changelog-overlay.open { display: flex; }
+.changelog-modal {
+    position: relative;
+    background: var(--bg-card); border: 1px solid var(--border-color);
+    border-radius: 20px; width: 100%; max-width: 560px; max-height: 80vh;
+    display: flex; flex-direction: column; box-shadow: var(--shadow);
+    animation: changelogFadeIn 0.25s ease;
+}
+.changelog-modal::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+    background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
+}
+@keyframes changelogFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.changelog-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 24px 28px 16px; border-bottom: 1px solid var(--border-color); flex-shrink: 0;
+}
+.changelog-title { font-size: 1.1rem; font-weight: 600; }
+.changelog-close {
+    background: var(--bg-tertiary); border: 1px solid var(--border-color);
+    color: var(--text-secondary); width: 32px; height: 32px; border-radius: 8px;
+    cursor: pointer; font-size: 1rem; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+}
+.changelog-close:hover { color: var(--text-primary); border-color: var(--accent-blue); }
+.changelog-body { padding: 20px 28px 28px; overflow-y: auto; flex: 1; }
+.changelog-version { margin-bottom: 24px; }
+.changelog-version:last-child { margin-bottom: 0; }
+.changelog-version-header {
+    display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+}
+.changelog-ver-tag {
+    font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 600;
+    color: var(--accent-cyan); background: rgba(6,182,212,0.1);
+    padding: 3px 10px; border-radius: 6px; border: 1px solid rgba(6,182,212,0.25);
+}
+.changelog-date { font-size: 0.78rem; color: var(--text-muted); }
+.changelog-group { margin-bottom: 8px; }
+.changelog-group-label {
+    font-size: 0.75rem; font-weight: 600; color: var(--text-secondary);
+    text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px;
+}
+.changelog-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.changelog-list li {
+    font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6;
+    padding-left: 14px; position: relative;
+}
+.changelog-list li::before {
+    content: '·'; position: absolute; left: 0; color: var(--accent-blue); font-weight: 700;
+}
+.changelog-empty {
+    font-size: 0.85rem; color: var(--text-muted); text-align: center; padding: 24px 0;
+}
