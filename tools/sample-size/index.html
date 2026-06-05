@@ -116,6 +116,7 @@
             background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
         }
         .card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
+        .card-header-spacer { flex: 1; }
         .card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
         .card-icon.blue { background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(6,182,212,0.2)); }
         .card-icon.green { background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2)); }
@@ -144,6 +145,16 @@
         .tooltip:hover::after { opacity: 1; visibility: visible; }
         .tooltip.tip-left::after { left: auto; right: -8px; transform: none; }
         .tooltip.tip-right::after { left: -8px; right: auto; transform: none; }
+        .tooltip.tip-bottom::after { bottom: auto; top: calc(100% + 8px); }
+        .results-table th .tooltip::after { display: none !important; }
+        #float-tip {
+            display: none; position: fixed; z-index: 100000;
+            background: var(--bg-primary); color: var(--text-primary);
+            padding: 12px 16px; border-radius: 10px; font-size: 0.75rem; font-weight: 400;
+            border: 1px solid var(--border-color); max-width: min(300px, calc(100vw - 24px));
+            white-space: normal; text-align: left; line-height: 1.6;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.6); pointer-events: none;
+        }
         
         input[type="number"] {
             background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px;
@@ -212,6 +223,8 @@
         .btn-primary { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--glow-blue); }
         .btn-secondary { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }
+        .btn-download { padding: 8px 16px; font-size: 0.82rem; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 10px; }
+        .btn-download:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); }
         .action-row { display: flex; gap: 14px; margin-top: 28px; justify-content: flex-end; }
         
         /* Results */
@@ -251,10 +264,11 @@
         .ci-card.primary { border-color: var(--accent-blue); background: rgba(59,130,246,0.1); }
         .ci-card.primary .ci-value { color: var(--accent-blue); }
         
-        .table-container { overflow-x: auto; margin-top: 20px; }
+        .table-container { overflow-x: auto; overflow-y: visible; margin-top: 20px; padding-bottom: 4px; }
         .results-table { width: 100%; border-collapse: collapse; }
         .results-table th, .results-table td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border-color); }
-        .results-table th { background: var(--bg-secondary); font-size: 0.75rem; color: var(--text-secondary); text-transform: uppercase; }
+        .results-table th { background: var(--bg-secondary); font-size: 0.75rem; color: var(--text-secondary); text-transform: none; overflow: visible; position: relative; white-space: nowrap; }
+        .results-table th .tooltip { font-size: 0.85rem; }
         .results-table td { font-family: 'JetBrains Mono', monospace; font-size: 0.9rem; }
         .highlight-cell { color: var(--accent-cyan); font-weight: 600; }
         .warning-cell { color: var(--accent-orange); }
@@ -340,7 +354,7 @@
                 <div id="m1-monitoring">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>同时观测指标数 k <span class="tooltip tip-right" data-tip="同时检验多个指标时，整体误报率会膨胀。k>1 时自动应用 Bonferroni 校正，将每个指标的显著性水平压缩为 α/k，使整体误报率不超过 α。">ⓘ</span></label>
+                            <label>同时观测指标数 k <span class="tooltip tip-right" data-tip="同时检验多个指标时，整体误报率会膨胀。k>1 时自动应用 Bonferroni 校正，将每个指标的显著性水平压缩为 α/k，使整体误报率不超过 α。仅作用于顶部整体结果：k>1 时会隐藏分页面配置，不参与各页面详情计算。">ⓘ</span></label>
                             <input type="number" id="m1-k" value="1" step="1" min="1" max="20" oninput="updateMetricInputs()">
                         </div>
                         <div class="form-group">
@@ -492,6 +506,8 @@
                     <div class="card-header">
                         <div class="card-icon purple">📈</div>
                         <div><div class="card-title">计算结果</div><div class="card-desc">最小样本量需求</div></div>
+                        <div class="card-header-spacer"></div>
+                        <button class="btn btn-download" id="m1-download-csv" onclick="downloadCsv(1)" style="display:none">⬇️ 下载 CSV</button>
                     </div>
                     <div id="m1-result-content"></div>
                     <h4 class="section-title" id="m1-page-title" style="display:none;">各页面详情</h4>
@@ -656,6 +672,8 @@
                     <div class="card-header">
                         <div class="card-icon purple">📈</div>
                         <div><div class="card-title">可检测精度</div><div class="card-desc">基于样本量的最小可检测效应</div></div>
+                        <div class="card-header-spacer"></div>
+                        <button class="btn btn-download" id="m2-download-csv" onclick="downloadCsv(2)" style="display:none">⬇️ 下载 CSV</button>
                     </div>
                     <div id="m2-result-content"></div>
                     <h4 class="section-title" id="m2-ci-title">置信区间半宽</h4>
@@ -857,12 +875,18 @@ function switchScenario(s) {
     initPageConfigs();
     document.getElementById('m1-results').classList.remove('visible');
     document.getElementById('m2-results').classList.remove('visible');
+    setDownloadBtnVisible(1, false);
+    setDownloadBtnVisible(2, false);
 }
 
 function switchMode(mode) {
     document.querySelectorAll('.switch-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
     document.getElementById('mode1').style.display = mode === 'mode1' ? 'block' : 'none';
     document.getElementById('mode2').style.display = mode === 'mode2' ? 'block' : 'none';
+    const m1HasResult = document.getElementById('m1-results').classList.contains('visible');
+    const m2HasResult = document.getElementById('m2-results').classList.contains('visible');
+    setDownloadBtnVisible(1, mode === 'mode1' && m1HasResult);
+    setDownloadBtnVisible(2, mode === 'mode2' && m2HasResult);
 }
 
 function switchMetric(m) {
@@ -872,6 +896,8 @@ function switchMetric(m) {
     updateInfoBoxes();
     document.getElementById('m1-results').classList.remove('visible');
     document.getElementById('m2-results').classList.remove('visible');
+    setDownloadBtnVisible(1, false);
+    setDownloadBtnVisible(2, false);
 }
 
 function updateInputVisibility() {
@@ -896,7 +922,7 @@ function updateInfoBoxes() {
     
     if (scenario === 'monitoring') {
         m1.className = 'info-box';
-        m1.innerHTML = '<strong>💡 长期观测公式：</strong>n = Z²×p(1-p)/δ²，其中 Z = Z<sub>α/2</sub> + Z<sub>β</sub><br><strong>说明：</strong>配对样本（同一群体跨周期），单组样本量。分页面时按整体 δ 反推各页所需样本量，使加权整体 MDE 回算 ≈ δ。';
+        m1.innerHTML = '<strong>💡 长期观测公式：</strong>n = Z²×p(1-p)/δ²，其中 Z = Z<sub>α/2</sub> + Z<sub>β</sub><br><strong>说明：</strong>配对样本（同一群体跨周期），单组样本量。分页面时按整体 δ 反推各页所需样本量，使加权整体 MDE 回算 ≈ δ。<br><strong>多指标：</strong>「同时观测指标数 k」及 Bonferroni 校正仅作用于顶部整体结果，不影响各页面详情。';
         m2.className = 'info-box';
         m2.innerHTML = '<strong>💡 长期观测公式：</strong>MDE = Z × √(p(1-p)/n)<br><strong>说明：</strong>可通过页面加权计算整体精度。';
     } else if (metricType === 'proportion') {
@@ -1037,6 +1063,157 @@ function getSelectedPages(mode) {
         }
     }
     return pages;
+}
+
+function thTip(label, tip) {
+    return `${label} <span class="tooltip tip-bottom" data-tip="${tip}">ⓘ</span>`;
+}
+
+// ===== CSV 导出 =====
+function setDownloadBtnVisible(mode, visible) {
+    const btn = document.getElementById(`m${mode}-download-csv`);
+    if (btn) btn.style.display = visible ? 'inline-flex' : 'none';
+}
+
+function csvEscape(val) {
+    const s = String(val ?? '');
+    return /[",\n\r]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function thText(th) {
+    return (th.childNodes[0]?.textContent || th.textContent).replace(/ⓘ/g, '').trim();
+}
+
+function extractResultSummary(contentId) {
+    const el = document.getElementById(contentId);
+    if (!el) return [];
+    const rows = [];
+    el.querySelectorAll('.result-summary').forEach(s => {
+        const label = s.querySelector('.result-label')?.textContent.trim();
+        const value = s.querySelector('.result-value')?.textContent.trim();
+        if (label) rows.push([label, value || '']);
+        const note = s.querySelector('.result-note')?.textContent.trim();
+        if (note) rows.push(['备注', note]);
+    });
+    el.querySelectorAll('.ab-result-card').forEach(c => {
+        const label = c.querySelector('.ab-result-label')?.textContent.trim();
+        const value = c.querySelector('.ab-result-value')?.textContent.trim();
+        if (label) rows.push([label, value || '']);
+    });
+    const abNote = el.querySelector('.result-note')?.textContent.trim();
+    if (abNote && !rows.some(r => r[0] === '备注')) rows.push(['备注', abNote]);
+    return rows;
+}
+
+function extractTable(theadId, tbodyId) {
+    const thead = document.getElementById(theadId);
+    const tbody = document.getElementById(tbodyId);
+    if (!thead || !tbody) return { headers: [], rows: [] };
+    const headers = [...thead.querySelectorAll('th')].map(thText);
+    const rows = [];
+    tbody.querySelectorAll('tr').forEach(tr => {
+        if (tr.querySelector('td[colspan]')) return;
+        const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim().replace(/\s+/g, ' '));
+        if (cells.length) rows.push(cells);
+    });
+    return { headers, rows };
+}
+
+function extractCiGrid() {
+    const grid = document.getElementById('m2-ci-grid');
+    if (!grid || !grid.children.length) return [];
+    const rows = [['置信水平', '半宽']];
+    grid.querySelectorAll('.ci-card').forEach(c => {
+        rows.push([
+            c.querySelector('.ci-level')?.textContent.trim() || '',
+            c.querySelector('.ci-value')?.textContent.trim() || ''
+        ]);
+    });
+    return rows;
+}
+
+function getExportMeta() {
+    const modeEl = document.querySelector('.switch-btn.active');
+    const modeName = modeEl?.textContent.trim() || '';
+    const scenarioName = scenario === 'ab-test' ? 'AB测试' : '长期观测';
+    const metricName = metricType === 'mean' ? '均值指标' : '比例指标';
+    return [
+        ['计算器', '最小样本量计算器'],
+        ['计算方向', modeName],
+        ['场景', scenarioName],
+        ['指标类型', scenario === 'ab-test' ? metricName : '比例指标'],
+        ['导出时间', new Date().toLocaleString('zh-CN')],
+        ['最小样本量阈值', getMinSample()],
+    ];
+}
+
+function collectCsvSections(mode) {
+    const sections = [{ title: '基本信息', rows: getExportMeta() }];
+    const contentId = `m${mode}-result-content`;
+
+    const summaryRows = extractResultSummary(contentId);
+    if (summaryRows.length) sections.push({ title: '计算结果', rows: [['项目', '值'], ...summaryRows] });
+
+    if (mode === 2) {
+        const ciRows = extractCiGrid();
+        if (ciRows.length > 1) sections.push({ title: '置信区间半宽', rows: ciRows });
+    }
+
+    const pageTitle = document.getElementById(`m${mode}-page-title`);
+    const pageTableVisible = pageTitle && getComputedStyle(pageTitle).display !== 'none';
+    if (pageTableVisible) {
+        const table = extractTable(`m${mode}-thead`, `m${mode}-tbody`);
+        if (table.headers.length && table.rows.length) sections.push({ title: '各页面详情', ...table });
+    }
+
+    document.getElementById(contentId)?.querySelectorAll('.table-container table').forEach((table, i) => {
+        const headers = [...table.querySelectorAll('thead th')].map(th => thText(th));
+        const rows = [];
+        table.querySelectorAll('tbody tr').forEach(tr => {
+            if (tr.querySelector('td[colspan]')) return;
+            const cells = [...tr.querySelectorAll('td')].map(td => td.textContent.trim().replace(/\s+/g, ' '));
+            if (cells.length) rows.push(cells);
+        });
+        if (headers.length && rows.length) {
+            sections.push({ title: i === 0 ? '各指标详情' : `各指标详情${i + 1}`, headers, rows });
+        }
+    });
+
+    return sections;
+}
+
+function buildCsvContent(sections) {
+    const lines = [];
+    sections.forEach((sec, i) => {
+        if (i > 0) lines.push('');
+        lines.push(csvEscape(sec.title));
+        if (sec.headers) {
+            lines.push(sec.headers.map(csvEscape).join(','));
+            sec.rows.forEach(r => lines.push(r.map(csvEscape).join(',')));
+        } else {
+            sec.rows.forEach(r => lines.push(r.map(csvEscape).join(',')));
+        }
+    });
+    return '\uFEFF' + lines.join('\r\n');
+}
+
+function downloadCsv(mode) {
+    const sections = collectCsvSections(mode);
+    if (sections.length <= 1 && !sections[0].rows.length) {
+        alert('暂无可导出的计算结果，请先完成计算');
+        return;
+    }
+    const scenarioTag = scenario === 'ab-test' ? 'AB测试' : '长期观测';
+    const modeTag = mode === 1 ? '精度到样本量' : '样本量到精度';
+    const date = new Date().toISOString().slice(0, 10);
+    const blob = new Blob([buildCsvContent(sections)], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `样本量计算_${modeTag}_${scenarioTag}_${date}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    trackEvent('download_csv', `mode${mode}`);
 }
 
 // ===== Mode 1: 精度 → 样本量 =====
@@ -1252,6 +1429,7 @@ function calcMode1() {
     document.getElementById('m1-result-content').innerHTML = html;
     document.getElementById('m1-formula').innerHTML = formula;
     document.getElementById('m1-results').classList.add('visible');
+    setDownloadBtnVisible(1, true);
     trackEvent('calculate', 'mode1');
 }
 
@@ -1265,7 +1443,15 @@ function renderMode1PageTable_Monitoring(alpha, power, delta) {
     const k = pages.length;
     const minS = getMinSample();
 
-    document.getElementById('m1-thead').innerHTML = '<tr><th>页面</th><th>权重 w</th><th>比例 p</th><th>所需样本量</th><th>页面MDE</th><th>预估样本量</th><th>状态</th></tr>';
+    document.getElementById('m1-thead').innerHTML = `<tr>
+        <th>${thTip('页面', 'LDBOM 页面标识：L（列表）/ D（详情）/ B（购买）/ O（订单）/ M（我的）。')}</th>
+        <th>${thTip('权重 w', '该页对整体指标的权重，反映该页在整体中的占比。建议各页权重之和为 1；若不为 1，合计行会提示整体口径可能失真。')}</th>
+        <th>${thTip('比例 p', '该页自身的预期比例（如满意率、转化率），填写在页面配置中。用于反推该页所需样本量，与顶部「总体观测目标 p」相互独立。')}</th>
+        <th>${thTip('所需样本量', '在整体目标 δ 下，按方差预算均分到各页后反推的最小样本量。公式：nᵢ = k·wᵢ²·pᵢ(1-pᵢ)·Z²/δ²。')}</th>
+        <th>${thTip('页面MDE', '以该页所需样本量回算的单页检测精度：MDEᵢ = Z·√(pᵢ(1-pᵢ)/nᵢ)。合计行为加权整体 MDE，回算应≈整体目标 δ。')}</th>
+        <th>${thTip('预估样本量', '页面配置中填写的计划或已有样本量（可选）。用于与「所需样本量」对比，判断该页流量是否充足。')}</th>
+        <th>${thTip('状态', '预估样本量 ≥ 所需样本量 → 充足；否则 → 不足。未填预估样本量显示 --。合计行汇总各页预估总量。')}</th>
+    </tr>`;
 
     let tbody = '';
     let sumW = 0, sumN = 0, sumEst = 0, varSum = 0;
@@ -1326,7 +1512,15 @@ function renderMode1PageTable_AB(alpha, power, delta) {
     document.getElementById('m1-table-container').style.display = pages.length ? 'block' : 'none';
     if (!pages.length) return;
     
-    document.getElementById('m1-thead').innerHTML = '<tr><th>页面</th><th>权重 w</th><th>页面δ</th><th>比例 pA</th><th>比例 pB</th><th>样本量 nA</th><th>所需 nB</th></tr>';
+    document.getElementById('m1-thead').innerHTML = `<tr>
+        <th>${thTip('页面', 'LDBOM 页面标识：L/D/B/O/M。')}</th>
+        <th>${thTip('权重 w', '该页对整体指标的权重。用于将总体 MDE δ 拆分到各页：页面δ = δ/w。')}</th>
+        <th>${thTip('页面δ', '该页需达到的波动精度，由总体 δ 按权重拆分：页面δ = δ/w。权重越大，页面δ 越小，要求越严。')}</th>
+        <th>${thTip('比例 pA', '该页 A 组（对照组）的预期比例。')}</th>
+        <th>${thTip('比例 pB', '该页 B 组（实验组）的预期比例。')}</th>
+        <th>${thTip('样本量 nA', '该页 A 组已确定或计划的样本量（由用户指定）。')}</th>
+        <th>${thTip('所需 nB', '在页面δ 和目标 α、power 下，该页 B 组所需的最小样本量。')}</th>
+    </tr>`;
     let tbody = '';
     for (const pg of pages) {
         const pageDelta = delta / pg.w;
@@ -1468,6 +1662,7 @@ function calcMode2() {
     document.getElementById('m2-result-content').innerHTML = html;
     document.getElementById('m2-formula').innerHTML = formula;
     document.getElementById('m2-results').classList.add('visible');
+    setDownloadBtnVisible(2, true);
     trackEvent('calculate', 'mode2');
 }
 
@@ -1477,7 +1672,16 @@ function renderMode2PageTable_Monitoring(pages, alpha, power) {
     document.getElementById('m2-table-container').style.display = pages.length ? 'block' : 'none';
     if (!pages.length) return;
     
-    document.getElementById('m2-thead').innerHTML = '<tr><th>页面</th><th>权重 w</th><th>比例 p</th><th>样本量 n</th><th>页面MDE</th><th>90%CI</th><th>95%CI</th><th>99%CI</th></tr>';
+    document.getElementById('m2-thead').innerHTML = `<tr>
+        <th>${thTip('页面', 'LDBOM 页面标识：L/D/B/O/M。')}</th>
+        <th>${thTip('权重 w', '该页对整体指标的权重，用于加权计算整体 MDE：SE = √(Σ wᵢ²·pᵢ(1-pᵢ)/nᵢ)。')}</th>
+        <th>${thTip('比例 p', '该页的预期比例（满意率、转化率等）。')}</th>
+        <th>${thTip('样本量 n', '该页的实际或计划单组样本量。')}</th>
+        <th>${thTip('页面MDE', '该页在 α、power 下可检测的最小波动：MDE = Z·√(p(1-p)/n)。')}</th>
+        <th>${thTip('90%CI', '该页在 90% 置信水平下的精度半宽：Z₀.₉₀·SE。')}</th>
+        <th>${thTip('95%CI', '该页在 95% 置信水平下的精度半宽：Z₀.₉₅·SE。')}</th>
+        <th>${thTip('99%CI', '该页在 99% 置信水平下的精度半宽：Z₀.₉₉·SE。')}</th>
+    </tr>`;
     let tbody = '';
     for (const pg of pages) {
         const pgSE = calcSE_single(pg.p, pg.n);
@@ -1493,7 +1697,15 @@ function renderMode2PageTable_AB(pages, alpha, power) {
     document.getElementById('m2-table-container').style.display = pages.length ? 'block' : 'none';
     if (!pages.length) return;
     
-    document.getElementById('m2-thead').innerHTML = '<tr><th>页面</th><th>权重 w</th><th>比例 pA</th><th>样本量 nA</th><th>比例 pB</th><th>样本量 nB</th><th>页面MDE</th></tr>';
+    document.getElementById('m2-thead').innerHTML = `<tr>
+        <th>${thTip('页面', 'LDBOM 页面标识：L/D/B/O/M。')}</th>
+        <th>${thTip('权重 w', '该页对整体指标的权重，用于加权计算整体 MDE。')}</th>
+        <th>${thTip('比例 pA', '该页 A 组（对照组）的预期比例。')}</th>
+        <th>${thTip('样本量 nA', '该页 A 组的实际或计划样本量。')}</th>
+        <th>${thTip('比例 pB', '该页 B 组（实验组）的预期比例。')}</th>
+        <th>${thTip('样本量 nB', '该页 B 组的实际或计划样本量。')}</th>
+        <th>${thTip('页面MDE', '该页可检测的最小效应：MDE = Z·√(pA(1-pA)/nA + pB(1-pB)/nB)。')}</th>
+    </tr>`;
     let tbody = '';
     for (const pg of pages) {
         const pgSE = calcSE_ab_proportion(pg.pA, pg.nA, pg.pB, pg.nB);
@@ -1522,12 +1734,59 @@ function resetMode(mode) {
         if (cfg) cfg.classList.remove('active');
     });
     document.getElementById(`m${mode}-results`).classList.remove('visible');
+    setDownloadBtnVisible(mode, false);
+}
+
+function initTableHeaderTooltips() {
+    let tipEl = document.getElementById('float-tip');
+    if (!tipEl) {
+        tipEl = document.createElement('div');
+        tipEl.id = 'float-tip';
+        document.body.appendChild(tipEl);
+    }
+
+    function showFloatTip(target) {
+        const text = target.getAttribute('data-tip');
+        if (!text) return;
+        tipEl.textContent = text;
+        tipEl.style.display = 'block';
+
+        const rect = target.getBoundingClientRect();
+        const margin = 12;
+        const gap = 8;
+        const tw = tipEl.offsetWidth;
+        const th = tipEl.offsetHeight;
+
+        let left = rect.left + rect.width / 2 - tw / 2;
+        let top = rect.bottom + gap;
+
+        if (left < margin) left = margin;
+        if (left + tw > window.innerWidth - margin) left = window.innerWidth - tw - margin;
+        if (top + th > window.innerHeight - margin) top = rect.top - th - gap;
+
+        tipEl.style.left = left + 'px';
+        tipEl.style.top = top + 'px';
+    }
+
+    function hideFloatTip() { tipEl.style.display = 'none'; }
+
+    document.addEventListener('mouseover', e => {
+        const t = e.target.closest('.results-table th .tooltip');
+        if (t) showFloatTip(t);
+    });
+    document.addEventListener('mouseout', e => {
+        const t = e.target.closest('.results-table th .tooltip');
+        if (t && !t.contains(e.relatedTarget)) hideFloatTip();
+    });
+    window.addEventListener('scroll', hideFloatTip, true);
+    window.addEventListener('resize', hideFloatTip);
 }
 
 document.addEventListener('DOMContentLoaded', () => { 
     updateInputVisibility();
     updateInfoBoxes(); 
-    initPageConfigs(); 
+    initPageConfigs();
+    initTableHeaderTooltips();
 });
 </script>
 </body>
