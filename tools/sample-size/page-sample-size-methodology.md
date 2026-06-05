@@ -2,7 +2,7 @@
 
 > 对应工具：样本量计算器 · Mode 1（精度 → 样本量）· 长期观测 · 比例指标  
 > 实现位置：`tools/sample-size/index.html` → `renderMode1PageTable_Monitoring`  
-> 版本：v1.1.0（2026-06-05）
+> 版本：v1.2.0（2026-06-05）
 
 ---
 

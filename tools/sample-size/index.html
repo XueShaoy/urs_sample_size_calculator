@@ -363,7 +363,7 @@
     </style>
 </head>
 <body>
-    <button class="watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026 | v1.1.0</button>
+    <button class="watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026 | v1.2.0</button>
 
     <div class="changelog-overlay" id="changelog-overlay" onclick="closeChangelogOnOverlay(event)">
         <div class="changelog-modal" role="dialog" aria-labelledby="changelog-title">
@@ -372,6 +372,19 @@
                 <button class="changelog-close" onclick="closeChangelog()" aria-label="关闭">✕</button>
             </div>
             <div class="changelog-body">
+                <div class="changelog-version">
+                    <div class="changelog-version-header">
+                        <span class="changelog-ver-tag">v1.2.0</span>
+                        <span class="changelog-date">2026-06-05</span>
+                    </div>
+                    <div class="changelog-group">
+                        <div class="changelog-group-label">改进</div>
+                        <ul class="changelog-list">
+                            <li>分页面方差预算改为按权重比例分配（份额 wᵢ/Σw），公式 nᵢ = wᵢ·Σw·pᵢ(1-pᵢ)·Z²/δ²</li>
+                            <li>新增方法论文档 page-sample-size-methodology.md，说明方差预算、误差份额与正逆一致性</li>
+                        </ul>
+                    </div>
+                </div>
                 <div class="changelog-version">
                     <div class="changelog-version-header">
                         <span class="changelog-ver-tag">v1.1.0</span>
@@ -388,7 +401,7 @@
                     <div class="changelog-group">
                         <div class="changelog-group-label">改进</div>
                         <ul class="changelog-list">
-                            <li>分页面样本量按整体 δ 与权重比例分配方差预算反推，合计行回算加权整体 MDE ≈ δ</li>
+                            <li>分页面样本量改为按整体 δ 均分方差预算反推，合计行回算加权整体 MDE ≈ δ</li>
                             <li>分页面信息填写完整时，「总体观测目标 p」改为可选项；未填时顶部提示，各页面详情仍正常计算</li>
                             <li>「同时观测指标数 k」及 Bonferroni 校正仅作用于顶部整体结果，k&gt;1 时隐藏分页面配置</li>
                             <li>表头浮窗改为固定定位，修复左侧裁切导致显示不完整的问题</li>

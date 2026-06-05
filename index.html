@@ -184,7 +184,7 @@
     </style>
 </head>
 <body>
-    <button class="watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026 | v1.1.0</button>
+    <button class="watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026 | v1.2.0</button>
 
     <div class="changelog-overlay" id="changelog-overlay" onclick="closeChangelogOnOverlay(event)">
         <div class="changelog-modal" role="dialog" aria-labelledby="changelog-title">
@@ -193,6 +193,19 @@
                 <button class="changelog-close" onclick="closeChangelog()" aria-label="关闭">✕</button>
             </div>
             <div class="changelog-body">
+                <div class="changelog-version">
+                    <div class="changelog-version-header">
+                        <span class="changelog-ver-tag">v1.2.0</span>
+                        <span class="changelog-date">2026-06-05</span>
+                    </div>
+                    <div class="changelog-group">
+                        <div class="changelog-group-label">样本量计算器</div>
+                        <ul class="changelog-list">
+                            <li>分页面方差预算改为按权重比例分配（nᵢ = wᵢ·Σw·pᵢ(1-pᵢ)·Z²/δ²）</li>
+                            <li>新增分页面样本量推算方法论文档</li>
+                        </ul>
+                    </div>
+                </div>
                 <div class="changelog-version">
                     <div class="changelog-version-header">
                         <span class="changelog-ver-tag">v1.1.0</span>
