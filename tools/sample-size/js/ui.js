@@ -184,8 +184,6 @@ function switchScenario(s) {
         if (selected) { btn.classList.add('active'); if (s === 'ab-test') btn.classList.add('ab-test'); }
     });
     document.getElementById('page-title').textContent = s === 'ab-test' ? 'AB 测试 ' : '长期观测 ';
-    document.getElementById('scenario-badge').className = 'scenario-badge ' + (s === 'ab-test' ? 'ab-test' : 'monitoring');
-    document.getElementById('scenario-badge').textContent = s === 'ab-test' ? '🧪 独立双样本' : '📈 配对样本';
     
     // Show/hide metric switch
     document.getElementById('metric-switch').style.display = s === 'ab-test' ? 'flex' : 'none';

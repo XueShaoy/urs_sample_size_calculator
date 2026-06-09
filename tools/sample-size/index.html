@@ -31,7 +31,6 @@
             --accent-red: #ef4444;
             --shadow: 0 4px 32px rgba(0,0,0,0.5);
             --glow-blue: 0 0 20px rgba(59, 130, 246, 0.3);
-            --topbar-height: 56px;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
         :focus { outline: none; }
@@ -46,45 +45,18 @@
             background-image: radial-gradient(ellipse at 10% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
                               radial-gradient(ellipse at 90% 80%, rgba(139,92,246,0.06) 0%, transparent 50%);
         }
-        .container {
-            max-width: 1200px; margin: 0 auto;
-            padding: 24px 24px 48px;
-            padding-top: calc(var(--topbar-height) + 28px);
-        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
 
-        /* Unified top bar */
-        .app-topbar {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            display: flex; align-items: center; gap: 12px;
-            min-height: var(--topbar-height);
-            padding: 8px 16px;
-            padding-top: max(8px, env(safe-area-inset-top, 0px));
-            background: rgba(10, 14, 20, 0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid var(--border-color);
-            box-shadow: var(--shadow);
-        }
-
-        .topbar-home {
-            display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0;
-            padding: 8px 12px; border-radius: 10px;
-            background: var(--bg-secondary); border: 1px solid var(--border-color);
-            color: var(--text-secondary); font-size: 0.82rem; font-weight: 500;
-            text-decoration: none; transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
-        }
-        .topbar-home:hover { color: var(--text-primary); border-color: var(--accent-blue); }
-        .topbar-home-icon { font-size: 1rem; line-height: 1; }
-
+        /* Floating nav — corner pills, no full-width bar */
         .scenario-switch {
-            display: flex; flex: 1; justify-content: flex-end; min-width: 0;
-            background: var(--bg-secondary); border-radius: 12px;
-            padding: 4px; border: 1px solid var(--border-color);
+            position: fixed; top: 16px; left: 16px; z-index: 1000;
+            display: flex; background: var(--bg-secondary); border-radius: 12px;
+            padding: 3px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
         }
         .scenario-btn {
             padding: 8px 14px; border: none; background: transparent;
             color: var(--text-secondary); font-size: 0.82rem; font-family: inherit;
-            cursor: pointer; border-radius: 8px; transition: background 0.2s, color 0.2s;
+            cursor: pointer; border-radius: 9px; transition: background 0.2s, color 0.2s;
             display: flex; align-items: center; gap: 6px; font-weight: 500;
             white-space: nowrap;
         }
@@ -92,20 +64,25 @@
         .scenario-btn.active { background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)); color: white; }
         .scenario-btn.active.ab-test { background: linear-gradient(135deg, var(--accent-orange), var(--accent-red)); }
         .scenario-btn:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); }
+
+        .home-link {
+            position: fixed; top: 16px; right: 16px; z-index: 1000;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 12px;
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); color: var(--text-secondary);
+            font-size: 0.82rem; font-weight: 500; text-decoration: none;
+            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
+        }
+        .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
         
-        header { text-align: center; margin-bottom: 40px; }
+        header { text-align: center; margin-bottom: 40px; padding-top: 8px; }
         h1 {
             font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .subtitle { color: var(--text-secondary); font-size: 1rem; }
-        .scenario-badge {
-            display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
-            border-radius: 20px; font-size: 0.8rem; font-weight: 500; margin-top: 12px;
-        }
-        .scenario-badge.monitoring { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
-        .scenario-badge.ab-test { background: rgba(245,158,11,0.15); color: var(--accent-orange); border: 1px solid rgba(245,158,11,0.3); }
         
         /* Mode Switch */
         .mode-switch { display: flex; justify-content: center; margin-bottom: 36px; }
@@ -350,11 +327,18 @@
         .section-title::before { content: ''; width: 4px; height: 20px; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple)); border-radius: 2px; }
         
         @media (max-width: 768px) {
-            :root { --topbar-height: 52px; }
-            .container { padding: 16px; padding-top: calc(var(--topbar-height) + 20px); }
-            .app-topbar { padding-left: 12px; padding-right: 12px; gap: 8px; }
-            .topbar-home { padding: 7px 10px; font-size: 0.78rem; }
-            .topbar-home-text { display: none; }
+            .container { padding: 16px; padding-top: 56px; }
+            /* Single row: ← left, scenario right */
+            .home-link {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: 12px; right: auto;
+                padding: 7px 11px;
+            }
+            .home-link-text { display: none; }
+            .scenario-switch {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: auto; right: 12px;
+            }
             .scenario-btn { padding: 7px 10px; font-size: 0.78rem; }
             .switch-btn { padding: 12px 16px; font-size: 0.82rem; }
             .switch-container { width: 100%; }
@@ -387,28 +371,26 @@
         </div>
     </div>
 
-    <header class="app-topbar" role="banner">
-        <a class="topbar-home" href="../../index.html">
-            <span class="topbar-home-icon" aria-hidden="true">←</span>
-            <span class="topbar-home-text">返回首页</span>
-        </a>
-        <div class="scenario-switch" role="tablist" aria-label="计算场景">
-            <button type="button" class="scenario-btn active" role="tab" aria-selected="true" data-scenario="monitoring" onclick="switchScenario('monitoring')">
-                <span class="scenario-btn-short">观测</span>
-                <span class="scenario-btn-full">📈 长期观测</span>
-            </button>
-            <button type="button" class="scenario-btn" role="tab" aria-selected="false" data-scenario="ab-test" onclick="switchScenario('ab-test')">
-                <span class="scenario-btn-short">AB</span>
-                <span class="scenario-btn-full">🧪 AB 测试</span>
-            </button>
-        </div>
-    </header>
+    <a class="home-link" href="../../index.html">
+        <span aria-hidden="true">←</span>
+        <span class="home-link-text">返回首页</span>
+    </a>
+
+    <div class="scenario-switch" role="tablist" aria-label="计算场景">
+        <button type="button" class="scenario-btn active" role="tab" aria-selected="true" data-scenario="monitoring" onclick="switchScenario('monitoring')">
+            <span class="scenario-btn-short">观测</span>
+            <span class="scenario-btn-full">📈 长期观测</span>
+        </button>
+        <button type="button" class="scenario-btn" role="tab" aria-selected="false" data-scenario="ab-test" onclick="switchScenario('ab-test')">
+            <span class="scenario-btn-short">AB</span>
+            <span class="scenario-btn-full">🧪 AB 测试</span>
+        </button>
+    </div>
 
     <div class="container">
         <header>
             <h1><span id="page-title">长期观测</span>最小样本量计算器</h1>
             <p class="subtitle">基于统计检验的样本量估算工具</p>
-            <div class="scenario-badge monitoring" id="scenario-badge">📈 配对样本</div>
         </header>
 
         <div class="mode-switch">
