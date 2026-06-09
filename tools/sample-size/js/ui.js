@@ -179,11 +179,11 @@ function switchScenario(s) {
     scenario = s;
     document.querySelectorAll('.scenario-btn').forEach(btn => {
         btn.classList.remove('active', 'ab-test');
-        if (btn.dataset.scenario === s) { btn.classList.add('active'); if (s === 'ab-test') btn.classList.add('ab-test'); }
+        const selected = btn.dataset.scenario === s;
+        btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+        if (selected) { btn.classList.add('active'); if (s === 'ab-test') btn.classList.add('ab-test'); }
     });
     document.getElementById('page-title').textContent = s === 'ab-test' ? 'AB 测试 ' : '长期观测 ';
-    document.getElementById('scenario-badge').className = 'scenario-badge ' + (s === 'ab-test' ? 'ab-test' : 'monitoring');
-    document.getElementById('scenario-badge').textContent = s === 'ab-test' ? '🧪 独立双样本' : '📈 配对样本';
     
     // Show/hide metric switch
     document.getElementById('metric-switch').style.display = s === 'ab-test' ? 'flex' : 'none';
@@ -204,7 +204,11 @@ function switchScenario(s) {
 }
 
 function switchMode(mode) {
-    document.querySelectorAll('.switch-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.mode === mode));
+    document.querySelectorAll('.switch-btn').forEach(btn => {
+        const selected = btn.dataset.mode === mode;
+        btn.classList.toggle('active', selected);
+        btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+    });
     document.getElementById('mode1').style.display = mode === 'mode1' ? 'block' : 'none';
     document.getElementById('mode2').style.display = mode === 'mode2' ? 'block' : 'none';
     const m1HasResult = document.getElementById('m1-results').classList.contains('visible');
@@ -216,7 +220,11 @@ function switchMode(mode) {
 
 function switchMetric(m) {
     metricType = m;
-    document.querySelectorAll('.metric-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.metric === m));
+    document.querySelectorAll('.metric-btn').forEach(btn => {
+        const selected = btn.dataset.metric === m;
+        btn.classList.toggle('active', selected);
+        btn.setAttribute('aria-selected', selected ? 'true' : 'false');
+    });
     updateInputVisibility();
     updateInfoBoxes();
     document.getElementById('m1-results').classList.remove('visible');

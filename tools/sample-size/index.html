@@ -33,6 +33,11 @@
             --glow-blue: 0 0 20px rgba(59, 130, 246, 0.3);
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        :focus { outline: none; }
+        :focus-visible {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 2px;
+        }
         body {
             font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-primary); color: var(--text-primary);
@@ -41,48 +46,43 @@
                               radial-gradient(ellipse at 90% 80%, rgba(139,92,246,0.06) 0%, transparent 50%);
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
-        
-        /* Scenario Switch */
+
+        /* Floating nav — corner pills, no full-width bar */
         .scenario-switch {
-            position: fixed; top: 20px; left: 20px; z-index: 1000;
+            position: fixed; top: 16px; left: 16px; z-index: 1000;
             display: flex; background: var(--bg-secondary); border-radius: 12px;
-            padding: 4px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
+            padding: 3px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
         }
         .scenario-btn {
-            padding: 10px 18px; border: none; background: transparent;
-            color: var(--text-secondary); font-size: 0.85rem; font-family: inherit;
-            cursor: pointer; border-radius: 8px; transition: all 0.25s;
-            display: flex; align-items: center; gap: 8px; font-weight: 500;
+            padding: 8px 14px; border: none; background: transparent;
+            color: var(--text-secondary); font-size: 0.82rem; font-family: inherit;
+            cursor: pointer; border-radius: 9px; transition: background 0.2s, color 0.2s;
+            display: flex; align-items: center; gap: 6px; font-weight: 500;
+            white-space: nowrap;
         }
+        .scenario-btn-short { display: none; }
         .scenario-btn.active { background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)); color: white; }
         .scenario-btn.active.ab-test { background: linear-gradient(135deg, var(--accent-orange), var(--accent-red)); }
         .scenario-btn:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); }
 
-        /* Back to Home */
         .home-link {
-            position: fixed; top: 20px; right: 20px; z-index: 1000;
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 16px; border-radius: 12px;
+            position: fixed; top: 16px; right: 16px; z-index: 1000;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 12px;
             background: var(--bg-secondary); border: 1px solid var(--border-color);
             box-shadow: var(--shadow); color: var(--text-secondary);
-            font-size: 0.85rem; font-weight: 500; text-decoration: none;
-            transition: all 0.25s;
+            font-size: 0.82rem; font-weight: 500; text-decoration: none;
+            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
         }
         .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
         
-        header { text-align: center; margin-bottom: 48px; padding-top: 20px; }
+        header { text-align: center; margin-bottom: 40px; padding-top: 8px; }
         h1 {
             font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
         .subtitle { color: var(--text-secondary); font-size: 1rem; }
-        .scenario-badge {
-            display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
-            border-radius: 20px; font-size: 0.8rem; font-weight: 500; margin-top: 12px;
-        }
-        .scenario-badge.monitoring { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
-        .scenario-badge.ab-test { background: rgba(245,158,11,0.15); color: var(--accent-orange); border: 1px solid rgba(245,158,11,0.3); }
         
         /* Mode Switch */
         .mode-switch { display: flex; justify-content: center; margin-bottom: 36px; }
@@ -162,6 +162,7 @@
             font-family: 'JetBrains Mono', monospace; width: 100%;
         }
         input:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
+        input:focus-visible { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.25); }
         input::placeholder { color: var(--text-muted); }
         .input-suffix { position: relative; }
         .input-suffix input { padding-right: 44px; }
@@ -217,6 +218,10 @@
         }
         .page-label .page-full-name { font-size: 0.7rem; color: var(--text-muted); margin-top: 4px; }
         .page-checkbox:checked + .page-label { background: rgba(59,130,246,0.15); border-color: var(--accent-blue); color: var(--accent-blue); }
+        .page-checkbox:focus-visible + .page-label {
+            outline: 2px solid var(--accent-cyan);
+            outline-offset: 2px;
+        }
         
         .page-configs { display: flex; flex-direction: column; gap: 16px; }
         .page-config { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 24px; display: none; }
@@ -232,15 +237,16 @@
         /* Buttons */
         .btn {
             padding: 14px 32px; border: none; border-radius: 12px; font-size: 0.95rem;
-            font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.25s;
+            font-family: inherit; font-weight: 600; cursor: pointer; transition: color 0.2s, border-color 0.2s, box-shadow 0.2s, transform 0.2s;
             display: inline-flex; align-items: center; justify-content: center; gap: 10px;
         }
         .btn-primary { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--glow-blue); }
+        .btn-primary:focus-visible { transform: none; box-shadow: var(--glow-blue); }
         .btn-secondary { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }
-        .btn-download { padding: 8px 16px; font-size: 0.82rem; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 10px; }
+        .btn-download { padding: 8px 16px; font-size: 0.82rem; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 10px; cursor: pointer; font-family: inherit; }
         .btn-download:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); }
-        .action-row { display: flex; gap: 14px; margin-top: 28px; justify-content: flex-end; }
+        .action-row { display: flex; gap: 14px; margin-top: 28px; justify-content: flex-end; flex-wrap: wrap; }
 
         /* Validation */
         .validation-banner {
@@ -321,15 +327,33 @@
         .section-title::before { content: ''; width: 4px; height: 20px; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple)); border-radius: 2px; }
         
         @media (max-width: 768px) {
-            .container { padding: 24px 16px; padding-top: 80px; }
-            .scenario-switch { top: 56px; left: 10px; right: 10px; justify-content: center; }
-            .home-link { top: 10px; right: 10px; padding: 8px 12px; }
-            .container { padding-top: 110px; }
+            .container { padding: 16px; padding-top: 56px; }
+            /* Single row: ← left, scenario right */
+            .home-link {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: 12px; right: auto;
+                padding: 7px 11px;
+            }
+            .home-link-text { display: none; }
+            .scenario-switch {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: auto; right: 12px;
+            }
+            .scenario-btn { padding: 7px 10px; font-size: 0.78rem; }
+            .switch-btn { padding: 12px 16px; font-size: 0.82rem; }
+            .switch-container { width: 100%; }
+            .mode-switch .switch-container { flex-wrap: wrap; justify-content: center; }
             .form-grid, .two-column { grid-template-columns: 1fr; }
             .page-grid { grid-template-columns: repeat(3, 1fr); }
             .ab-result-grid, .ci-grid { grid-template-columns: 1fr; }
             .result-pair { grid-template-columns: 1fr; }
             .result-value { font-size: 2.2rem; }
+            .action-row { justify-content: stretch; }
+            .action-row .btn { flex: 1; min-width: 140px; }
+        }
+        @media (max-width: 420px) {
+            .scenario-btn-full { display: none; }
+            .scenario-btn-short { display: inline; }
         }
     </style>
     <link rel="stylesheet" href="../../assets/changelog.css">
@@ -347,32 +371,40 @@
         </div>
     </div>
 
-    <a class="home-link" href="../../index.html">← 返回首页</a>
+    <a class="home-link" href="../../index.html">
+        <span aria-hidden="true">←</span>
+        <span class="home-link-text">返回首页</span>
+    </a>
 
-    <div class="scenario-switch">
-        <button class="scenario-btn active" data-scenario="monitoring" onclick="switchScenario('monitoring')">📈 长期观测</button>
-        <button class="scenario-btn" data-scenario="ab-test" onclick="switchScenario('ab-test')">🧪 AB 测试</button>
+    <div class="scenario-switch" role="tablist" aria-label="计算场景">
+        <button type="button" class="scenario-btn active" role="tab" aria-selected="true" data-scenario="monitoring" onclick="switchScenario('monitoring')">
+            <span class="scenario-btn-short">观测</span>
+            <span class="scenario-btn-full">📈 长期观测</span>
+        </button>
+        <button type="button" class="scenario-btn" role="tab" aria-selected="false" data-scenario="ab-test" onclick="switchScenario('ab-test')">
+            <span class="scenario-btn-short">AB</span>
+            <span class="scenario-btn-full">🧪 AB 测试</span>
+        </button>
     </div>
 
     <div class="container">
         <header>
             <h1><span id="page-title">长期观测</span>最小样本量计算器</h1>
             <p class="subtitle">基于统计检验的样本量估算工具</p>
-            <div class="scenario-badge monitoring" id="scenario-badge">📈 配对样本</div>
         </header>
 
         <div class="mode-switch">
-            <div class="switch-container">
-                <button class="switch-btn active" data-mode="mode1" onclick="switchMode('mode1')">🎯 精度 → 样本量</button>
-                <button class="switch-btn" data-mode="mode2" onclick="switchMode('mode2')">📐 样本量 → 精度</button>
+            <div class="switch-container" role="tablist" aria-label="计算方向">
+                <button type="button" class="switch-btn active" role="tab" aria-selected="true" data-mode="mode1" onclick="switchMode('mode1')">🎯 精度 → 样本量</button>
+                <button type="button" class="switch-btn" role="tab" aria-selected="false" data-mode="mode2" onclick="switchMode('mode2')">📐 样本量 → 精度</button>
             </div>
         </div>
         
         <!-- Metric Type Switch (only for AB test) -->
         <div class="metric-switch" id="metric-switch" style="display:none;">
-            <div class="metric-container">
-                <button class="metric-btn active" data-metric="proportion" onclick="switchMetric('proportion')">📊 比例指标</button>
-                <button class="metric-btn" data-metric="mean" onclick="switchMetric('mean')">📈 均值指标</button>
+            <div class="metric-container" role="tablist" aria-label="指标类型">
+                <button type="button" class="metric-btn active" role="tab" aria-selected="true" data-metric="proportion" onclick="switchMetric('proportion')">📊 比例指标</button>
+                <button type="button" class="metric-btn" role="tab" aria-selected="false" data-metric="mean" onclick="switchMetric('mean')">📈 均值指标</button>
             </div>
         </div>
 
