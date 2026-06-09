@@ -192,6 +192,21 @@
         }
         .preset-btn:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
         .preset-btn.active { background: rgba(6,182,212,0.15); border-color: var(--accent-cyan); color: var(--accent-cyan); }
+
+        .page-csv-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+        .btn-sm { padding: 8px 16px; font-size: 0.82rem; border-radius: 10px; }
+        .dropzone {
+            border: 1.5px dashed var(--border-color); border-radius: 14px;
+            padding: 22px; text-align: center; color: var(--text-secondary); font-size: 0.85rem;
+            background: var(--bg-secondary); transition: all 0.2s; cursor: pointer;
+        }
+        .dropzone:hover, .dropzone.dragover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(6,182,212,0.06); }
+        .dropzone strong { color: var(--accent-cyan); }
+        .dropzone .dz-hint { display: block; margin-top: 8px; font-size: 0.75rem; color: var(--text-muted); }
+        .csv-status { margin-top: 10px; font-size: 0.8rem; }
+        .csv-status.ok { color: var(--accent-green); }
+        .csv-status.err { color: var(--accent-red); }
+        .info-box code { font-family: 'JetBrains Mono', monospace; background: var(--bg-tertiary); padding: 2px 7px; border-radius: 6px; color: var(--accent-purple); font-size: 0.78rem; }
         
         .page-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin-bottom: 24px; }
         .page-checkbox { display: none; }
@@ -652,7 +667,18 @@
             <div class="card" id="m2-page-card">
                 <div class="card-header">
                     <div class="card-icon green">📄</div>
-                    <div><div class="card-title">LDBOM 页面加权配置</div><div class="card-desc">选择页面，输入各页面参数（可选）</div></div>
+                    <div><div class="card-title">LDBOM 页面加权配置</div><div class="card-desc" id="m2-page-card-desc">选择页面，输入各页面参数（可选）</div></div>
+                </div>
+                <div id="m2-page-csv-section" style="display:none;">
+                    <div class="page-csv-toolbar">
+                        <button class="btn btn-secondary btn-sm" onclick="downloadPageCsvTemplate()">⬇ 下载 CSV 模板</button>
+                    </div>
+                    <div class="dropzone" id="m2-page-dropzone">
+                        点击或拖拽 <strong>.csv</strong> 文件到此处导入分页面数据
+                        <span class="dz-hint">列格式：page_id, w, p, n（页面ID、权重、预期比例%、实际样本量）</span>
+                        <input type="file" id="m2-page-csv-file" accept=".csv,text/csv" style="display:none;">
+                    </div>
+                    <div class="csv-status" id="m2-page-csv-status"></div>
                 </div>
                 <div class="preset-section">
                     <span class="preset-label">快捷预设：</span>
@@ -697,6 +723,13 @@ let scenario = 'monitoring';
 let metricType = 'proportion';  // 'proportion' or 'mean'
 const PAGES = ['L', 'D', 'B', 'O', 'M'];
 const PAGE_NAMES = { L: 'List 列表页', D: 'Detail 详情页', B: 'Booking 预订页', O: 'Order 订单页', M: 'Message 订后短信' };
+const PAGE_CSV_SAMPLE = [
+    { page_id: 'L', w: 0.20, p: 70, n: 4000 },
+    { page_id: 'D', w: 0.25, p: 72, n: 3500 },
+    { page_id: 'B', w: 0.25, p: 68, n: 5200 },
+    { page_id: 'O', w: 0.20, p: 75, n: 2800 },
+    { page_id: 'M', w: 0.10, p: 65, n: 1500 }
+];
 const Z_CI = { 0.90: 1.645, 0.95: 1.960, 0.99: 2.576 };
 function getMinSample() {
     return Math.max(1, parseInt(document.getElementById('min-sample').value) || 200);
@@ -876,6 +909,7 @@ function switchScenario(s) {
     
     updateInputVisibility();
     updateInfoBoxes();
+    updateM2PageCsvVisibility();
     initPageConfigs();
     document.getElementById('m1-results').classList.remove('visible');
     document.getElementById('m2-results').classList.remove('visible');
@@ -891,6 +925,7 @@ function switchMode(mode) {
     const m2HasResult = document.getElementById('m2-results').classList.contains('visible');
     setDownloadBtnVisible(1, mode === 'mode1' && m1HasResult);
     setDownloadBtnVisible(2, mode === 'mode2' && m2HasResult);
+    updateM2PageCsvVisibility();
 }
 
 function switchMetric(m) {
@@ -919,6 +954,22 @@ function updateInputVisibility() {
     const showPageConfig = scenario === 'monitoring' || metricType === 'proportion';
     document.getElementById('m1-page-card').style.display = showPageConfig ? 'block' : 'none';
     document.getElementById('m2-page-card').style.display = showPageConfig ? 'block' : 'none';
+    const m2Desc = document.getElementById('m2-page-card-desc');
+    if (m2Desc) {
+        m2Desc.textContent = scenario === 'monitoring'
+            ? '选择页面手动录入，或导入 CSV 批量填写（长期观测 · 模式2）'
+            : '选择页面，输入各页面参数（可选）';
+    }
+    updateM2PageCsvVisibility();
+}
+
+function isMode2Active() {
+    return document.getElementById('mode2').style.display !== 'none';
+}
+
+function updateM2PageCsvVisibility() {
+    const el = document.getElementById('m2-page-csv-section');
+    if (el) el.style.display = (scenario === 'monitoring' && isMode2Active()) ? 'block' : 'none';
 }
 
 function updateInfoBoxes() {
@@ -928,7 +979,7 @@ function updateInfoBoxes() {
         m1.className = 'info-box';
         m1.innerHTML = '<strong>💡 长期观测公式：</strong>n = Z²×p(1-p)/δ²，其中 Z = Z<sub>α/2</sub> + Z<sub>β</sub><br><strong>说明：</strong>配对样本（同一群体跨周期），单组样本量。分页面时按整体 δ 与权重比例分配方差预算，反推各页所需样本量，使加权整体 MDE 回算 ≈ δ。<br><strong>多指标：</strong>「同时观测指标数 k」及 Bonferroni 校正仅作用于顶部整体结果，不影响各页面详情。';
         m2.className = 'info-box';
-        m2.innerHTML = '<strong>💡 长期观测公式：</strong>MDE = Z × √(p(1-p)/n)<br><strong>说明：</strong>可通过页面加权计算整体精度。';
+        m2.innerHTML = '<strong>💡 长期观测公式：</strong>MDE = Z × √(p(1-p)/n)<br><strong>说明：</strong>可通过页面加权计算整体精度。分页面支持 CSV 导入，列：<code>page_id, w, p, n</code>（页面 ID 为 L/D/B/O/M，w 为权重，p 为预期比例%，n 为实际样本量）；文件中填写几行即导入几个页面。';
     } else if (metricType === 'proportion') {
         m1.className = 'info-box ab-test';
         m1.innerHTML = `<strong>💡 比例指标AB测试公式：</strong><br>SE = √(VarA/nA + VarB/nB)，MDE = Z × SE<br>给定 nA，求 nB = VarB / [(δ/Z)² - VarA/nA]`;
@@ -1002,6 +1053,159 @@ function applyPreset(mode, preset) {
     });
     if (preset === 'all') PAGES.forEach(p => { document.getElementById(`m${mode}-pg-${p}`).checked = true; document.getElementById(`m${mode}-cfg-${p}`).classList.add('active'); });
     else if (preset === 'db') ['D','B'].forEach(p => { document.getElementById(`m${mode}-pg-${p}`).checked = true; document.getElementById(`m${mode}-cfg-${p}`).classList.add('active'); });
+}
+
+// ===== 分页面 CSV 导入（长期观测 · 模式2） =====
+function normalizePageId(raw) {
+    const s = String(raw || '').trim().toUpperCase();
+    if (PAGES.includes(s)) return s;
+    const first = s.charAt(0);
+    if (PAGES.includes(first)) return first;
+    return null;
+}
+
+function parsePageCSV(text) {
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim() !== '' && !l.trim().startsWith('#'));
+    if (!lines.length) return [];
+    const splitLine = l => l.split(',').map(s => s.trim().replace(/^"(.*)"$/, '$1'));
+    const header = splitLine(lines[0]).map(h => h.toLowerCase());
+    const alias = {
+        page_id: ['page_id', 'page', 'id', '页面', '页面id', '页面_id'],
+        w: ['w', 'weight', '权重', '页面权重'],
+        p: ['p', 'proportion', 'rate', '预期比例', '比例'],
+        n: ['n', 'sample', 'samples', '样本量', '实际样本量', '样本']
+    };
+    const findIdx = keys => { for (const k of keys) { const i = header.indexOf(k); if (i !== -1) return i; } return -1; };
+    const needed = ['page_id', 'w', 'p', 'n'];
+    const idx = {};
+    needed.forEach(k => { idx[k] = findIdx(alias[k]); });
+    const headerMatched = needed.every(k => idx[k] !== -1);
+
+    let dataLines = lines;
+    if (headerMatched) {
+        dataLines = lines.slice(1);
+    } else {
+        needed.forEach((k, i) => { idx[k] = i; });
+        const firstCells = splitLine(lines[0]);
+        if (normalizePageId(firstCells[0]) === null) dataLines = lines.slice(1);
+    }
+
+    const out = [];
+    dataLines.forEach(line => {
+        const cells = splitLine(line);
+        const obj = {};
+        for (const k of needed) {
+            const i = idx[k];
+            obj[k] = (i !== -1 && cells[i] !== undefined) ? cells[i] : '';
+        }
+        if (obj.page_id !== '' || obj.w !== '' || obj.p !== '' || obj.n !== '') out.push(obj);
+    });
+    return out;
+}
+
+function setM2PageCsvStatus(msg, cls) {
+    const el = document.getElementById('m2-page-csv-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.className = 'csv-status' + (cls ? ' ' + cls : '');
+}
+
+function applyPageCsvRows(rows) {
+    PAGES.forEach(p => {
+        document.getElementById(`m2-pg-${p}`).checked = false;
+        document.getElementById(`m2-cfg-${p}`).classList.remove('active');
+        ['w', 'p', 'n'].forEach(field => {
+            const el = document.getElementById(`m2-${p}-${field}`);
+            if (el) el.value = '';
+        });
+    });
+
+    const seen = new Set();
+    const validRows = [];
+    for (let i = 0; i < rows.length; i++) {
+        const r = rows[i];
+        const pageId = normalizePageId(r.page_id);
+        if (!pageId) {
+            setM2PageCsvStatus(`第 ${i + 1} 行页面 ID「${r.page_id}」无效，请使用 L/D/B/O/M`, 'err');
+            return false;
+        }
+        if (seen.has(pageId)) {
+            setM2PageCsvStatus(`页面 ${pageId} 在 CSV 中重复出现`, 'err');
+            return false;
+        }
+        const w = parseFloat(r.w);
+        const p = parseFloat(r.p);
+        const n = parseInt(r.n, 10);
+        if (!(w > 0)) {
+            setM2PageCsvStatus(`第 ${i + 1} 行（${pageId}）的权重无效，需为正数`, 'err');
+            return false;
+        }
+        if (!(p > 0 && p < 100)) {
+            setM2PageCsvStatus(`第 ${i + 1} 行（${pageId}）的预期比例无效，需在 0–100% 之间`, 'err');
+            return false;
+        }
+        if (!(n > 0)) {
+            setM2PageCsvStatus(`第 ${i + 1} 行（${pageId}）的样本量无效，需为正整数`, 'err');
+            return false;
+        }
+        seen.add(pageId);
+        validRows.push({ pageId, w, p, n });
+    }
+    if (!validRows.length) {
+        setM2PageCsvStatus('未在文件中找到有效数据行', 'err');
+        return false;
+    }
+
+    validRows.forEach(({ pageId, w, p, n }) => {
+        document.getElementById(`m2-pg-${pageId}`).checked = true;
+        document.getElementById(`m2-cfg-${pageId}`).classList.add('active');
+        document.getElementById(`m2-${pageId}-w`).value = w;
+        document.getElementById(`m2-${pageId}-p`).value = p;
+        document.getElementById(`m2-${pageId}-n`).value = n;
+    });
+    return validRows.length;
+}
+
+function handleM2PageCSVText(text, fname) {
+    let rows;
+    try { rows = parsePageCSV(text); } catch (e) {
+        setM2PageCsvStatus('CSV 解析失败：' + e.message, 'err');
+        return;
+    }
+    const count = applyPageCsvRows(rows);
+    if (!count) return;
+    setM2PageCsvStatus(`已从 ${fname || 'CSV'} 导入 ${count} 个页面`, 'ok');
+    calcMode2();
+}
+
+function downloadPageCsvTemplate() {
+    const csv = 'page_id,w,p,n\n' + PAGE_CSV_SAMPLE.map(r => `${r.page_id},${r.w},${r.p},${r.n}`).join('\n') + '\n';
+    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'sample-size-m2-monitoring-pages-template.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+}
+
+function readM2PageCsvFile(file) {
+    if (!/\.csv$/i.test(file.name)) { setM2PageCsvStatus('请选择 .csv 文件', 'err'); return; }
+    const reader = new FileReader();
+    reader.onload = e => handleM2PageCSVText(e.target.result, file.name);
+    reader.onerror = () => setM2PageCsvStatus('文件读取失败', 'err');
+    reader.readAsText(file, 'UTF-8');
+}
+
+function setupM2PageDropzone() {
+    const dz = document.getElementById('m2-page-dropzone');
+    const fileInput = document.getElementById('m2-page-csv-file');
+    if (!dz || !fileInput) return;
+    dz.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', e => { if (e.target.files[0]) readM2PageCsvFile(e.target.files[0]); fileInput.value = ''; });
+    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); }));
+    dz.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) readM2PageCsvFile(f); });
 }
 
 function syncPageP(mode, p) {
@@ -1746,6 +1950,7 @@ function resetMode(mode) {
     });
     document.getElementById(`m${mode}-results`).classList.remove('visible');
     setDownloadBtnVisible(mode, false);
+    if (mode === 2) setM2PageCsvStatus('', '');
 }
 
 function initTableHeaderTooltips() {
@@ -1798,6 +2003,7 @@ document.addEventListener('DOMContentLoaded', () => {
     updateInfoBoxes(); 
     initPageConfigs();
     initTableHeaderTooltips();
+    setupM2PageDropzone();
 });
 </script>
 <script src="../../assets/changelog.js" data-page="sample-size" data-base="../../"></script>
