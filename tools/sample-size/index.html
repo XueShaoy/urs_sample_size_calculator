@@ -264,6 +264,8 @@
         }
         .result-unit { font-size: 1.2rem; -webkit-text-fill-color: var(--text-secondary); }
         .result-note { font-size: 0.8rem; color: var(--text-muted); margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border-color); }
+        .result-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; margin-bottom: 28px; }
+        .result-pair > .result-summary { margin-bottom: 0; }
         
         .ab-result-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 28px; }
         .ab-result-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; }
@@ -308,6 +310,7 @@
             .form-grid, .two-column { grid-template-columns: 1fr; }
             .page-grid { grid-template-columns: repeat(3, 1fr); }
             .ab-result-grid, .ci-grid { grid-template-columns: 1fr; }
+            .result-pair { grid-template-columns: 1fr; }
             .result-value { font-size: 2.2rem; }
         }
     </style>
@@ -830,6 +833,30 @@ function calcSE_ab_mean(sigmaA, nA, sigmaB, nB) {
 }
 
 function calcCI(se, conf) { return Z_CI[conf] * se; }
+
+// 等效样本量：使单样本设计达到相同 SE 所需的样本量。
+// 比例 varRef = p(1-p)，均值 varRef = σ²；n_eff = varRef / SE²。
+function effectiveSampleSize(varRef, se) {
+    if (!(se > 0) || !(varRef > 0)) return null;
+    return varRef / (se * se);
+}
+
+// Kish 有效样本量：对加权样本套用 ESS = (Σw)²/Σw²。
+// 每页 nᵢ 个观测各带页权重 wᵢ，故 ESS = (Σ nᵢwᵢ)² / (Σ nᵢwᵢ²)，量纲为样本量。
+function kishESS(pages) {
+    const sumNW = pages.reduce((s, pg) => s + pg.n * pg.w, 0);
+    const sumNW2 = pages.reduce((s, pg) => s + pg.n * pg.w * pg.w, 0);
+    if (!(sumNW2 > 0)) return null;
+    return (sumNW * sumNW) / sumNW2;
+}
+
+function essCardHTML(valStr, note, label) {
+    return `<div class="result-summary">
+            <div class="result-label">${label || '等效样本量 (Effective Sample Size)'}</div>
+            <div class="result-value">${valStr}</div>
+            <div class="result-note">${note}</div>
+        </div>`;
+}
 
 // ===== 多指标 Bonferroni =====
 function updateMetricInputs() {
@@ -1776,12 +1803,26 @@ function calcMode2() {
             alert('请输入样本量或配置页面参数'); return;
         }
         
-        html = `<div class="result-summary">
+        const mdeCard = `<div class="result-summary">
             <div class="result-label">最小可检测效应 (MDE)</div>
             <div class="result-value">±${(mde*100).toFixed(2)}<span class="result-unit">%</span></div>
             <div class="result-note">α=${alpha}, Power=${power}, Z=${z.toFixed(3)}, SE=±${(se*100).toFixed(4)}%</div>
         </div>`;
-        
+
+        let essCard;
+        {
+            const usePages = pages.length > 0;
+            const ess = usePages ? kishESS(pages) : null;
+            const valStr = ess != null ? Math.round(ess).toLocaleString() : '—';
+            const sumNW = usePages ? pages.reduce((s, pg) => s + pg.n * pg.w, 0) : 0;
+            const sumNW2 = usePages ? pages.reduce((s, pg) => s + pg.n * pg.w * pg.w, 0) : 0;
+            const note = usePages
+                ? `Kish 有效样本量 = (Σ nᵢwᵢ)²/Σ nᵢwᵢ² = ${Math.round(sumNW).toLocaleString()}² / ${Math.round(sumNW2).toLocaleString()}（加权样本的等效样本量，权重越不均衡损失越大）`
+                : `需配置分页面权重后计算（Kish ESS 基于加权样本）`;
+            essCard = essCardHTML(valStr, note, '等效样本量 (Kish ESS)');
+        }
+        html = `<div class="result-pair">${mdeCard}${essCard}</div>`;
+
         renderMode2PageTable_Monitoring(pages, alpha, power);
         
         // CI Grid
@@ -1823,7 +1864,15 @@ function calcMode2() {
             <div class="result-value">±${(mde*100).toFixed(2)}<span class="result-unit">%</span></div>
             <div class="result-note">nA=${nA||'加权'}, nB=${nB||'加权'}, α=${alpha}, Power=${power}, Z=${z.toFixed(3)}, SE=±${(se*100).toFixed(4)}%</div>
         </div>`;
-        
+
+        {
+            const usePages = pages.length > 0;
+            const sumW = usePages ? pages.reduce((s, pg) => s + pg.w, 0) : 0;
+            const pARef = usePages ? (sumW > 0 ? pages.reduce((s, pg) => s + pg.w * pg.pA, 0) / sumW : 0) : pA;
+            const ess = effectiveSampleSize(variance(pARef), se);
+            html += essCardHTML(ess != null ? Math.round(ess).toLocaleString() : '—', `等价于基线 pA=${(pARef*100).toFixed(1)}% 的单样本量：n_eff = pA(1-pA)/SE² = ${variance(pARef).toFixed(4)} / ${(se*se).toFixed(8)}${usePages ? '（基线 pA 为各页加权平均）' : ''}`);
+        }
+
         renderMode2PageTable_AB(pages, alpha, power);
         
         // CI Grid
@@ -1855,7 +1904,12 @@ function calcMode2() {
             <div class="result-value">±${mde.toFixed(4)}</div>
             <div class="result-note">σA=${sigmaA}, σB=${sigmaB}, nA=${nA.toLocaleString()}, nB=${nB.toLocaleString()}, α=${alpha}, Power=${power}, Z=${z.toFixed(3)}, SE=${se.toFixed(6)}</div>
         </div>`;
-        
+
+        {
+            const ess = effectiveSampleSize(sigmaA * sigmaA, se);
+            html += essCardHTML(ess != null ? Math.round(ess).toLocaleString() : '—', `等价于基线 σA=${sigmaA} 的单样本量：n_eff = σA²/SE² = ${(sigmaA*sigmaA).toFixed(2)} / ${(se*se).toFixed(8)}`);
+        }
+
         formula = `<strong>SE：</strong>√(σA²/nA + σB²/nB) = √(${(sigmaA*sigmaA).toFixed(2)}/${nA} + ${(sigmaB*sigmaB).toFixed(2)}/${nB}) = ${se.toFixed(6)}<br>
             <strong>MDE：</strong>δ = Z × SE = ${z.toFixed(3)} × ${se.toFixed(6)} = ${mde.toFixed(4)}`;
         
@@ -1890,6 +1944,7 @@ function renderMode2PageTable_Monitoring(pages, alpha, power) {
         <th>${thTip('权重 w', '该页对整体指标的权重，用于加权计算整体 MDE：SE = √(Σ wᵢ²·pᵢ(1-pᵢ)/nᵢ)。')}</th>
         <th>${thTip('比例 p', '该页的预期比例（满意率、转化率等）。')}</th>
         <th>${thTip('样本量 n', '该页的实际或计划单组样本量。')}</th>
+        <th>${thTip('等效样本量', 'Kish 有效样本量为加权样本的整组聚合指标：ESS = (Σ nᵢwᵢ)²/Σ nᵢwᵢ²，无逐页值，逐页显示 —，汇总行展示整体 ESS。')}</th>
         <th>${thTip('SE', '该页标准误：SE = √(p(1-p)/n)。')}</th>
         <th>${thTip('页面MDE', '该页在 α、power 下可检测的最小波动：MDE = Z·√(p(1-p)/n)。')}</th>
         <th>${thTip('90%CI', '该页在 90% 置信水平下的精度半宽：Z₀.₉₀·SE。')}</th>
@@ -1897,10 +1952,32 @@ function renderMode2PageTable_Monitoring(pages, alpha, power) {
         <th>${thTip('99%CI', '该页在 99% 置信水平下的精度半宽：Z₀.₉₉·SE。')}</th>
     </tr>`;
     let tbody = '';
+    const cnt = pages.length;
+    let sumW = 0, sumWP = 0, sumN = 0;
     for (const pg of pages) {
         const pgSE = calcSE_single(pg.p, pg.n);
         const pgMDE = calcMDE_single(pg.p, pg.n, alpha, power);
-        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pg.p*100).toFixed(1)}%</td><td>${pg.n.toLocaleString()}</td><td>±${(pgSE*100).toFixed(4)}%</td><td class="highlight-cell">±${(pgMDE*100).toFixed(2)}%</td><td>±${(calcCI(pgSE,0.90)*100).toFixed(2)}%</td><td>±${(calcCI(pgSE,0.95)*100).toFixed(2)}%</td><td>±${(calcCI(pgSE,0.99)*100).toFixed(2)}%</td></tr>`;
+        const pgCI90 = calcCI(pgSE, 0.90), pgCI95 = calcCI(pgSE, 0.95), pgCI99 = calcCI(pgSE, 0.99);
+        sumW += pg.w; sumWP += pg.w * pg.p; sumN += pg.n;
+        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pg.p*100).toFixed(1)}%</td><td>${pg.n.toLocaleString()}</td><td>—</td><td>±${(pgSE*100).toFixed(4)}%</td><td class="highlight-cell">±${(pgMDE*100).toFixed(2)}%</td><td>±${(pgCI90*100).toFixed(2)}%</td><td>±${(pgCI95*100).toFixed(2)}%</td><td>±${(pgCI99*100).toFixed(2)}%</td></tr>`;
+    }
+    if (cnt > 0) {
+        const wAvgP = sumW > 0 ? sumWP / sumW : 0;
+        const overallSE = calcWeightedSE_single(pages);
+        const overallMDE = z * overallSE;
+        const kEss = kishESS(pages);
+        tbody += `<tr style="border-top:2px solid var(--accent-blue);font-weight:600;background:rgba(59,130,246,0.06);">
+            <td>汇总</td>
+            <td>${sumW.toFixed(3)}</td>
+            <td>${(wAvgP*100).toFixed(1)}%</td>
+            <td>${sumN.toLocaleString()}</td>
+            <td class="highlight-cell">${kEss != null ? Math.round(kEss).toLocaleString() : '—'}</td>
+            <td>±${(overallSE*100).toFixed(4)}%</td>
+            <td class="highlight-cell">±${(overallMDE*100).toFixed(2)}%</td>
+            <td>±${(calcCI(overallSE,0.90)*100).toFixed(2)}%</td>
+            <td>±${(calcCI(overallSE,0.95)*100).toFixed(2)}%</td>
+            <td>±${(calcCI(overallSE,0.99)*100).toFixed(2)}%</td>
+        </tr>`;
     }
     document.getElementById('m2-tbody').innerHTML = tbody;
 }
