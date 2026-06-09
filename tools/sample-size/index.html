@@ -1452,6 +1452,7 @@ function renderMode1PageTable_Monitoring(alpha, power, delta) {
         <th>${thTip('权重 w', '该页对整体指标的权重，反映该页在整体中的占比。建议各页权重之和为 1；若不为 1，合计行会提示整体口径可能失真。')}</th>
         <th>${thTip('比例 p', '该页自身的预期比例（如满意率、转化率），填写在页面配置中。用于反推该页所需样本量，与顶部「总体观测目标 p」相互独立。')}</th>
         <th>${thTip('所需样本量', '在整体目标 δ 下，按权重比例分配方差预算后反推的最小样本量。公式：nᵢ = wᵢ·(Σw)·pᵢ(1-pᵢ)·Z²/δ²。')}</th>
+        <th>${thTip('SE', '该页标准误：SE = √(p(1-p)/n)。')}</th>
         <th>${thTip('页面MDE', '以该页所需样本量回算的单页检测精度：MDEᵢ = Z·√(pᵢ(1-pᵢ)/nᵢ)。合计行为加权整体 MDE，回算应≈整体目标 δ。')}</th>
         <th>${thTip('预估样本量', '页面配置中填写的计划或已有样本量（可选）。用于与「所需样本量」对比，判断该页流量是否充足。')}</th>
         <th>${thTip('状态', '预估样本量 ≥ 所需样本量 → 充足；否则 → 不足。未填预估样本量显示 --。合计行汇总各页预估总量。')}</th>
@@ -1464,7 +1465,8 @@ function renderMode1PageTable_Monitoring(alpha, power, delta) {
     for (const pg of pages) {
         const rawN = pg.w * totalW * variance(pg.p) * z * z / (delta * delta);
         const pageN = Math.max(Math.ceil(rawN), minS);
-        const pageMDE = z * Math.sqrt(variance(pg.p) / pageN);
+        const pageSE = Math.sqrt(variance(pg.p) / pageN);
+        const pageMDE = z * pageSE;
 
         sumW += pg.w;
         sumN += pageN;
@@ -1481,10 +1483,11 @@ function renderMode1PageTable_Monitoring(alpha, power, delta) {
         }
         const nEstDisplay = pg.n > 0 ? pg.n.toLocaleString() : '--';
 
-        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pg.p*100).toFixed(1)}%</td><td class="highlight-cell">${pageN.toLocaleString()}</td><td>±${(pageMDE*100).toFixed(2)}%</td><td>${nEstDisplay}</td><td class="${statusClass}">${status}</td></tr>`;
+        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pg.p*100).toFixed(1)}%</td><td class="highlight-cell">${pageN.toLocaleString()}</td><td>±${(pageSE*100).toFixed(4)}%</td><td>±${(pageMDE*100).toFixed(2)}%</td><td>${nEstDisplay}</td><td class="${statusClass}">${status}</td></tr>`;
     }
 
-    const overallMDE = z * Math.sqrt(varSum);
+    const overallSE = Math.sqrt(varSum);
+    const overallMDE = z * overallSE;
     const wOk = Math.abs(sumW - 1) <= 0.01;
     const wNote = wOk ? '' : ` <span style="color:var(--accent-orange);">(权重和≠1，整体口径可能失真)</span>`;
     const estTotalDisplay = anyEst ? sumEst.toLocaleString() : '--';
@@ -1496,12 +1499,13 @@ function renderMode1PageTable_Monitoring(alpha, power, delta) {
         <td>${sumW.toFixed(3)}${wNote}</td>
         <td>—</td>
         <td class="highlight-cell">${sumN.toLocaleString()}</td>
+        <td>±${(overallSE*100).toFixed(4)}%</td>
         <td>±${(overallMDE*100).toFixed(2)}%</td>
         <td>${estTotalDisplay}</td>
         <td class="${overallStatusClass}">${overallStatus}</td>
     </tr>`;
 
-    tbody += `<tr><td colspan="7" style="font-size:0.78rem;color:var(--text-secondary);background:transparent;line-height:1.6;padding-top:12px;">
+    tbody += `<tr><td colspan="8" style="font-size:0.78rem;color:var(--text-secondary);background:transparent;line-height:1.6;padding-top:12px;">
         分配方法：以整体目标 δ=${(delta*100).toFixed(2)}% 按权重比例分配方差预算（份额 wᵢ/Σw），回算加权整体 MDE ≈ δ。<br>
         各页所需样本量 nᵢ = wᵢ · (Σw) · pᵢ(1-pᵢ) · Z² / δ²；页面MDE = Z·√(pᵢ(1-pᵢ)/nᵢ)；整体MDE = Z·√(Σ wᵢ²·pᵢ(1-pᵢ)/nᵢ)。
     </td></tr>`;
@@ -1522,6 +1526,7 @@ function renderMode1PageTable_AB(alpha, power, delta) {
         <th>${thTip('比例 pA', '该页 A 组（对照组）的预期比例。')}</th>
         <th>${thTip('比例 pB', '该页 B 组（实验组）的预期比例。')}</th>
         <th>${thTip('样本量 nA', '该页 A 组已确定或计划的样本量（由用户指定）。')}</th>
+        <th>${thTip('SE', '该页标准误：SE = √(pA(1-pA)/nA + pB(1-pB)/nB)。')}</th>
         <th>${thTip('所需 nB', '在页面δ 和目标 α、power 下，该页 B 组所需的最小样本量。')}</th>
     </tr>`;
     let tbody = '';
@@ -1533,7 +1538,8 @@ function renderMode1PageTable_AB(alpha, power, delta) {
             pageNB = result.nB;
         }
         const nADisplay = pg.nA > 0 ? pg.nA.toLocaleString() : '--';
-        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pageDelta*100).toFixed(2)}%</td><td>${(pg.pA*100).toFixed(1)}%</td><td>${(pg.pB*100).toFixed(1)}%</td><td>${nADisplay}</td><td class="highlight-cell">${pageNB.toLocaleString()}</td></tr>`;
+        const pageSEDisplay = pg.nA > 0 ? `±${(calcSE_ab_proportion(pg.pA, pg.nA, pg.pB, pageNB)*100).toFixed(4)}%` : '--';
+        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pageDelta*100).toFixed(2)}%</td><td>${(pg.pA*100).toFixed(1)}%</td><td>${(pg.pB*100).toFixed(1)}%</td><td>${nADisplay}</td><td>${pageSEDisplay}</td><td class="highlight-cell">${pageNB.toLocaleString()}</td></tr>`;
     }
     document.getElementById('m1-tbody').innerHTML = tbody;
 }
@@ -1569,7 +1575,7 @@ function calcMode2() {
         html = `<div class="result-summary">
             <div class="result-label">最小可检测效应 (MDE)</div>
             <div class="result-value">±${(mde*100).toFixed(2)}<span class="result-unit">%</span></div>
-            <div class="result-note">α=${alpha}, Power=${power}</div>
+            <div class="result-note">α=${alpha}, Power=${power}, Z=${z.toFixed(3)}, SE=±${(se*100).toFixed(4)}%</div>
         </div>`;
         
         renderMode2PageTable_Monitoring(pages, alpha, power);
@@ -1611,7 +1617,7 @@ function calcMode2() {
         html = `<div class="result-summary">
             <div class="result-label">最小可检测效应 (MDE)</div>
             <div class="result-value">±${(mde*100).toFixed(2)}<span class="result-unit">%</span></div>
-            <div class="result-note">nA=${nA||'加权'}, nB=${nB||'加权'}, α=${alpha}, Power=${power}</div>
+            <div class="result-note">nA=${nA||'加权'}, nB=${nB||'加权'}, α=${alpha}, Power=${power}, Z=${z.toFixed(3)}, SE=±${(se*100).toFixed(4)}%</div>
         </div>`;
         
         renderMode2PageTable_AB(pages, alpha, power);
@@ -1643,7 +1649,7 @@ function calcMode2() {
         html = `<div class="result-summary">
             <div class="result-label">最小可检测效应 (MDE)</div>
             <div class="result-value">±${mde.toFixed(4)}</div>
-            <div class="result-note">σA=${sigmaA}, σB=${sigmaB}, nA=${nA.toLocaleString()}, nB=${nB.toLocaleString()}, α=${alpha}, Power=${power}</div>
+            <div class="result-note">σA=${sigmaA}, σB=${sigmaB}, nA=${nA.toLocaleString()}, nB=${nB.toLocaleString()}, α=${alpha}, Power=${power}, Z=${z.toFixed(3)}, SE=${se.toFixed(6)}</div>
         </div>`;
         
         formula = `<strong>SE：</strong>√(σA²/nA + σB²/nB) = √(${(sigmaA*sigmaA).toFixed(2)}/${nA} + ${(sigmaB*sigmaB).toFixed(2)}/${nB}) = ${se.toFixed(6)}<br>
@@ -1680,6 +1686,7 @@ function renderMode2PageTable_Monitoring(pages, alpha, power) {
         <th>${thTip('权重 w', '该页对整体指标的权重，用于加权计算整体 MDE：SE = √(Σ wᵢ²·pᵢ(1-pᵢ)/nᵢ)。')}</th>
         <th>${thTip('比例 p', '该页的预期比例（满意率、转化率等）。')}</th>
         <th>${thTip('样本量 n', '该页的实际或计划单组样本量。')}</th>
+        <th>${thTip('SE', '该页标准误：SE = √(p(1-p)/n)。')}</th>
         <th>${thTip('页面MDE', '该页在 α、power 下可检测的最小波动：MDE = Z·√(p(1-p)/n)。')}</th>
         <th>${thTip('90%CI', '该页在 90% 置信水平下的精度半宽：Z₀.₉₀·SE。')}</th>
         <th>${thTip('95%CI', '该页在 95% 置信水平下的精度半宽：Z₀.₉₅·SE。')}</th>
@@ -1689,7 +1696,7 @@ function renderMode2PageTable_Monitoring(pages, alpha, power) {
     for (const pg of pages) {
         const pgSE = calcSE_single(pg.p, pg.n);
         const pgMDE = calcMDE_single(pg.p, pg.n, alpha, power);
-        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pg.p*100).toFixed(1)}%</td><td>${pg.n.toLocaleString()}</td><td class="highlight-cell">±${(pgMDE*100).toFixed(2)}%</td><td>±${(calcCI(pgSE,0.90)*100).toFixed(2)}%</td><td>±${(calcCI(pgSE,0.95)*100).toFixed(2)}%</td><td>±${(calcCI(pgSE,0.99)*100).toFixed(2)}%</td></tr>`;
+        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pg.p*100).toFixed(1)}%</td><td>${pg.n.toLocaleString()}</td><td>±${(pgSE*100).toFixed(4)}%</td><td class="highlight-cell">±${(pgMDE*100).toFixed(2)}%</td><td>±${(calcCI(pgSE,0.90)*100).toFixed(2)}%</td><td>±${(calcCI(pgSE,0.95)*100).toFixed(2)}%</td><td>±${(calcCI(pgSE,0.99)*100).toFixed(2)}%</td></tr>`;
     }
     document.getElementById('m2-tbody').innerHTML = tbody;
 }
@@ -1707,13 +1714,14 @@ function renderMode2PageTable_AB(pages, alpha, power) {
         <th>${thTip('样本量 nA', '该页 A 组的实际或计划样本量。')}</th>
         <th>${thTip('比例 pB', '该页 B 组（实验组）的预期比例。')}</th>
         <th>${thTip('样本量 nB', '该页 B 组的实际或计划样本量。')}</th>
+        <th>${thTip('SE', '该页标准误：SE = √(pA(1-pA)/nA + pB(1-pB)/nB)。')}</th>
         <th>${thTip('页面MDE', '该页可检测的最小效应：MDE = Z·√(pA(1-pA)/nA + pB(1-pB)/nB)。')}</th>
     </tr>`;
     let tbody = '';
     for (const pg of pages) {
         const pgSE = calcSE_ab_proportion(pg.pA, pg.nA, pg.pB, pg.nB);
         const pgMDE = z * pgSE;
-        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pg.pA*100).toFixed(1)}%</td><td>${pg.nA.toLocaleString()}</td><td>${(pg.pB*100).toFixed(1)}%</td><td>${pg.nB.toLocaleString()}</td><td class="highlight-cell">±${(pgMDE*100).toFixed(2)}%</td></tr>`;
+        tbody += `<tr><td>${pg.id}页</td><td>${pg.w.toFixed(3)}</td><td>${(pg.pA*100).toFixed(1)}%</td><td>${pg.nA.toLocaleString()}</td><td>${(pg.pB*100).toFixed(1)}%</td><td>${pg.nB.toLocaleString()}</td><td>±${(pgSE*100).toFixed(4)}%</td><td class="highlight-cell">±${(pgMDE*100).toFixed(2)}%</td></tr>`;
     }
     document.getElementById('m2-tbody').innerHTML = tbody;
 }
