@@ -148,9 +148,19 @@
         .chart-subtitle { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 16px; min-height: 18px; }
         .chart-wrap svg { width: 100%; height: auto; display: block; }
         .chart-empty { display: flex; align-items: center; justify-content: center; height: 180px; color: var(--text-muted); font-size: 0.85rem; }
-
-        .hover-dot { opacity: 0; transition: opacity 0.1s; cursor: crosshair; }
-        .hover-dot:hover { opacity: 1; }
+        .chart-interactive { position: relative; }
+        .chart-hit-area { cursor: crosshair; }
+        .chart-crosshair { pointer-events: none; }
+        .chart-tooltip {
+            position: absolute; pointer-events: none; z-index: 2;
+            padding: 8px 12px; border-radius: 8px;
+            background: var(--bg-tertiary); border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); font-size: 0.78rem; line-height: 1.5;
+            opacity: 0; transition: opacity 0.12s; white-space: nowrap;
+        }
+        .chart-tooltip.visible { opacity: 1; }
+        .chart-tooltip-day { color: var(--text-secondary); margin-bottom: 2px; }
+        .chart-tooltip-value { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
 
         .formula-section { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 24px; margin-top: 24px; }
         .formula-label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; font-weight: 500; }
@@ -546,17 +556,99 @@ function renderChart(container, { curve, yLabel, yMin, yMax, thresholdY, thresho
     s += `<text x="${ml+cw/2}" y="${H-3}" font-size="10" fill="#6b7280" text-anchor="middle" font-family="Noto Sans SC,sans-serif">天数</text>`;
     s += `<text x="10" y="${mt+ch/2}" font-size="10" fill="#6b7280" text-anchor="middle" transform="rotate(-90 10 ${mt+ch/2})" font-family="Noto Sans SC,sans-serif">${yLabel}</text>`;
 
-    // Hover dots (shown on hover via CSS)
-    const dotEvery = Math.max(1, Math.floor(maxDay / 28));
-    for (const pt of curve) {
-        if (pt.day % dotEvery === 0 || pt.day === 1 || pt.day === maxDay) {
-            const xp = px(pt.day), yp = py(pt.value);
-            s += `<circle cx="${xp}" cy="${yp}" r="4.5" fill="${color}" stroke="#0a0e14" stroke-width="1.5" class="hover-dot"><title>第${pt.day}天：${pt.value.toFixed(2)}%</title></circle>`;
-        }
-    }
+    // Crosshair + hit area (tooltip wired after DOM insert)
+    s += `<g class="chart-crosshair" opacity="0">`;
+    s += `<line class="crosshair-v" y1="${mt}" y2="${mt+ch}" stroke="${color}" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
+    s += `<line class="crosshair-h" x1="${ml}" x2="${ml+cw}" stroke="${color}" stroke-width="1" stroke-dasharray="4,3" opacity="0.6"/>`;
+    s += `<circle class="crosshair-dot" r="5" fill="${color}" stroke="#0a0e14" stroke-width="2"/>`;
+    s += `</g>`;
+    s += `<rect class="chart-hit-area" x="${ml}" y="${mt}" width="${cw}" height="${ch}" fill="transparent"/>`;
 
     s += `</svg>`;
-    container.innerHTML = s;
+    container.classList.add('chart-interactive');
+    container.innerHTML = s + `<div class="chart-tooltip" aria-hidden="true"><div class="chart-tooltip-day"></div><div class="chart-tooltip-value"></div></div>`;
+
+    const svg = container.querySelector('svg');
+    const hitArea = svg.querySelector('.chart-hit-area');
+    const crosshair = svg.querySelector('.chart-crosshair');
+    const crossV = svg.querySelector('.crosshair-v');
+    const crossH = svg.querySelector('.crosshair-h');
+    const crossDot = svg.querySelector('.crosshair-dot');
+    const tooltip = container.querySelector('.chart-tooltip');
+    const tooltipDay = tooltip.querySelector('.chart-tooltip-day');
+    const tooltipValue = tooltip.querySelector('.chart-tooltip-value');
+    const valueLabel = yLabel.replace(/\s*\(%\)\s*$/, '');
+
+    function dayFromSvgX(svgX) {
+        if (maxDay <= 1) return 1;
+        const t = (svgX - ml) / cw;
+        return Math.min(maxDay, Math.max(1, Math.round(1 + t * (maxDay - 1))));
+    }
+
+    function svgPointFromEvent(e) {
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const ctm = svg.getScreenCTM();
+        if (!ctm) return null;
+        return pt.matrixTransform(ctm.inverse());
+    }
+
+    function showAtDay(day) {
+        const pt = curve[day - 1];
+        if (!pt) return;
+        const xp = px(day), yp = py(pt.value);
+        crossV.setAttribute('x1', xp);
+        crossV.setAttribute('x2', xp);
+        crossH.setAttribute('y1', yp);
+        crossH.setAttribute('y2', yp);
+        crossDot.setAttribute('cx', xp);
+        crossDot.setAttribute('cy', yp);
+        crosshair.setAttribute('opacity', '1');
+        tooltipDay.textContent = `第 ${day} 天`;
+        tooltipValue.textContent = `${valueLabel}：${pt.value.toFixed(2)}%`;
+        tooltipValue.style.color = color;
+        tooltip.classList.add('visible');
+        tooltip.setAttribute('aria-hidden', 'false');
+
+        const wrapRect = container.getBoundingClientRect();
+        const svgRect = svg.getBoundingClientRect();
+        const scaleX = svgRect.width / W;
+        const scaleY = svgRect.height / H;
+        const dotX = svgRect.left + xp * scaleX - wrapRect.left;
+        const dotY = svgRect.top + yp * scaleY - wrapRect.top;
+        const tipW = tooltip.offsetWidth || 120;
+        const tipH = tooltip.offsetHeight || 48;
+        let left = dotX + 12;
+        let top = dotY - tipH - 8;
+        if (left + tipW > container.clientWidth - 4) left = dotX - tipW - 12;
+        if (left < 4) left = 4;
+        if (top < 4) top = dotY + 12;
+        tooltip.style.left = left + 'px';
+        tooltip.style.top = top + 'px';
+    }
+
+    function hideTooltip() {
+        crosshair.setAttribute('opacity', '0');
+        tooltip.classList.remove('visible');
+        tooltip.setAttribute('aria-hidden', 'true');
+    }
+
+    function onPointerMove(e) {
+        const sp = svgPointFromEvent(e);
+        if (!sp || sp.x < ml || sp.x > ml + cw || sp.y < mt || sp.y > mt + ch) {
+            hideTooltip();
+            return;
+        }
+        showAtDay(dayFromSvgX(sp.x));
+    }
+
+    hitArea.addEventListener('mousemove', onPointerMove);
+    hitArea.addEventListener('mouseleave', hideTooltip);
+    hitArea.addEventListener('touchmove', e => {
+        if (e.touches.length) { e.preventDefault(); onPointerMove(e.touches[0]); }
+    }, { passive: false });
+    hitArea.addEventListener('touchend', hideTooltip);
 }
 
 // ===== Main =====
