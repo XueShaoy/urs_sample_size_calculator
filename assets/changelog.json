@@ -15,15 +15,6 @@
         "sample-size": [
           { "group": "新增", "items": ["长期观测 · 模式2 分页面配置支持 CSV 导入（点击或拖拽上传），可下载模板批量填写 page_id, w, p, n", "导入成功后自动勾选对应页面并触发计算"] },
           { "group": "改进", "items": ["分页面详情表与各页面结果区新增标准误 SE 展示"] }
-        ],
-        "power-analysis": [
-          { "group": "全站", "items": ["全站版本同步至 v1.2.1"] }
-        ],
-        "sequential-test": [
-          { "group": "全站", "items": ["全站版本同步至 v1.2.1"] }
-        ],
-        "significance-test": [
-          { "group": "全站", "items": ["全站版本同步至 v1.2.1"] }
         ]
       }
     },
@@ -33,15 +24,6 @@
       "changes": {
         "sample-size": [
           { "group": "改进", "items": ["分页面方差预算改为按权重比例分配（份额 wᵢ/Σw），公式 nᵢ = wᵢ·Σw·pᵢ(1-pᵢ)·Z²/δ²"] }
-        ],
-        "power-analysis": [
-          { "group": "全站", "items": ["全站版本同步至 v1.2.0"] }
-        ],
-        "sequential-test": [
-          { "group": "全站", "items": ["全站版本同步至 v1.2.0"] }
-        ],
-        "significance-test": [
-          { "group": "全站", "items": ["全站版本同步至 v1.2.0"] }
         ]
       }
     },
