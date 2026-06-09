@@ -16,6 +16,84 @@ function getMinSample() {
     return Math.max(1, parseInt(document.getElementById('min-sample').value) || 200);
 }
 
+function clearFieldError(input) {
+    if (!input) return;
+    input.classList.remove('input-error');
+    input.removeAttribute('aria-invalid');
+    const group = input.closest('.form-group') || input.parentElement;
+    group?.querySelector('.field-error-msg')?.remove();
+}
+
+function clearValidation(mode) {
+    document.querySelectorAll(`#mode${mode} input.input-error`).forEach(clearFieldError);
+    const banner = document.getElementById(`m${mode}-validation-banner`);
+    if (banner) {
+        banner.hidden = true;
+        banner.innerHTML = '';
+    }
+}
+
+function setFieldError(inputId, message) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.classList.add('input-error');
+    input.setAttribute('aria-invalid', 'true');
+    const group = input.closest('.form-group') || input.parentElement;
+    if (!group) return;
+    let msg = group.querySelector('.field-error-msg');
+    if (!msg) {
+        msg = document.createElement('span');
+        msg.className = 'field-error-msg';
+        msg.setAttribute('role', 'alert');
+        group.appendChild(msg);
+    }
+    msg.textContent = message;
+}
+
+function showValidationErrors(mode, errors) {
+    clearValidation(mode);
+    const unique = [];
+    const seen = new Set();
+    for (const err of errors) {
+        const key = `${err.id || ''}:${err.message}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        unique.push(err);
+    }
+    let firstFocus = null;
+    for (const err of unique) {
+        if (err.id) {
+            setFieldError(err.id, err.message);
+            if (!firstFocus) firstFocus = document.getElementById(err.id);
+        }
+    }
+    const banner = document.getElementById(`m${mode}-validation-banner`);
+    if (banner) {
+        banner.hidden = false;
+        banner.innerHTML = unique.map(e => `<div>⚠ ${e.message}</div>`).join('');
+    }
+    document.getElementById(`m${mode}-results`).classList.remove('visible');
+    setDownloadBtnVisible(mode, false);
+    const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+    if (firstFocus) {
+        firstFocus.focus({ preventScroll: true });
+        firstFocus.scrollIntoView({ behavior: scrollBehavior, block: 'center' });
+    } else if (banner) {
+        banner.scrollIntoView({ behavior: scrollBehavior, block: 'center' });
+    }
+    return false;
+}
+
+function showResults(mode) {
+    const el = document.getElementById(`m${mode}-results`);
+    el.classList.add('visible', 'highlight-flash');
+    el.addEventListener('animationend', () => el.classList.remove('highlight-flash'), { once: true });
+    const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+    requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: scrollBehavior, block: 'start' });
+    });
+}
+
 // GA追踪
 function trackEvent(action, mode) {
     if (typeof gtag !== 'undefined') {
@@ -119,6 +197,8 @@ function switchScenario(s) {
     initPageConfigs();
     document.getElementById('m1-results').classList.remove('visible');
     document.getElementById('m2-results').classList.remove('visible');
+    clearValidation(1);
+    clearValidation(2);
     setDownloadBtnVisible(1, false);
     setDownloadBtnVisible(2, false);
 }
@@ -141,6 +221,8 @@ function switchMetric(m) {
     updateInfoBoxes();
     document.getElementById('m1-results').classList.remove('visible');
     document.getElementById('m2-results').classList.remove('visible');
+    clearValidation(1);
+    clearValidation(2);
     setDownloadBtnVisible(1, false);
     setDownloadBtnVisible(2, false);
 }
@@ -348,6 +430,15 @@ function syncPageP(mode, p) {
 
 // Sync handlers
 document.addEventListener('input', e => {
+    if (e.target.matches('input[type="number"]')) {
+        clearFieldError(e.target);
+        const modeRoot = e.target.closest('#mode1, #mode2');
+        if (modeRoot && !modeRoot.querySelector('input.input-error')) {
+            const mode = modeRoot.id === 'mode1' ? 1 : 2;
+            const banner = document.getElementById(`m${mode}-validation-banner`);
+            if (banner) { banner.hidden = true; banner.innerHTML = ''; }
+        }
+    }
     // Proportion sync
     if (e.target.id === 'm1-ab-pA' && document.getElementById('m1-ab-sync-p').checked) {
         document.getElementById('m1-ab-pB').value = e.target.value;
@@ -537,7 +628,7 @@ function buildCsvContent(sections) {
 function downloadCsv(mode) {
     const sections = collectCsvSections(mode);
     if (sections.length <= 1 && !sections[0].rows.length) {
-        alert('暂无可导出的计算结果，请先完成计算');
+        showValidationErrors(mode, [{ message: '暂无可导出的计算结果，请先完成计算' }]);
         return;
     }
     const scenarioTag = scenario === 'ab-test' ? 'AB测试' : '长期观测';
@@ -555,6 +646,7 @@ function downloadCsv(mode) {
 
 // ===== Mode 1: 精度 → 样本量 =====
 function calcMode1() {
+    clearValidation(1);
     let html = '', formula = '';
     
     if (scenario === 'monitoring') {
@@ -570,9 +662,11 @@ function calcMode1() {
         const hasPages = pages.length > 0;
         const pValid = p > 0 && p < 1;
 
-        if (delta <= 0) { alert('请输入有效的 MDE δ'); return; }
+        if (delta <= 0) { return showValidationErrors(1, [{ id: 'm1-delta', message: '请输入有效的 MDE δ' }]); }
         // 总体观测目标 p：分页面信息填写完整时为可选项
-        if (!pValid && !hasPages) { alert('请输入有效的 p 值 (0-100%)，或在下方填写分页面信息'); return; }
+        if (!pValid && !hasPages) {
+            return showValidationErrors(1, [{ id: 'm1-p', message: '请输入有效的 p 值 (0-100%)，或在下方填写分页面信息' }]);
+        }
 
         const z = getZ(alpha, power);
         const za = normInv(1 - alpha/2), zb = normInv(power);
@@ -615,16 +709,23 @@ function calcMode1() {
             const za = normInv(1 - alphaAdj/2), zb = normInv(power);
 
             const metrics = [];
+            const metricErrors = [];
             for (let i = 1; i <= k; i++) {
                 const pEl = document.getElementById(`m1-metric-${i}-p`);
                 const dEl = document.getElementById(`m1-metric-${i}-delta`);
-                if (!pEl || !dEl) { alert('请先设置指标数再计算'); return; }
+                if (!pEl || !dEl) {
+                    metricErrors.push({ id: 'm1-k', message: '请先设置指标数再计算' });
+                    break;
+                }
                 const p = (parseFloat(pEl.value) || 0) / 100;
                 const delta = (parseFloat(dEl.value) || 0) / 100;
-                if (p <= 0 || p >= 1) { alert(`请输入指标 ${i} 的有效 p 值 (0-100%)`); return; }
-                if (delta <= 0) { alert(`请输入指标 ${i} 的有效 δ 值`); return; }
-                metrics.push({ i, p, delta, n: calcN_single(p, delta, alphaAdj, power, getMinSample()) });
+                if (p <= 0 || p >= 1) metricErrors.push({ id: `m1-metric-${i}-p`, message: `请输入指标 ${i} 的有效 p 值 (0-100%)` });
+                if (delta <= 0) metricErrors.push({ id: `m1-metric-${i}-delta`, message: `请输入指标 ${i} 的有效 δ 值` });
+                if (p > 0 && p < 1 && delta > 0) {
+                    metrics.push({ i, p, delta, n: calcN_single(p, delta, alphaAdj, power, getMinSample()) });
+                }
             }
+            if (metricErrors.length) return showValidationErrors(1, metricErrors);
 
             const maxN = Math.max(...metrics.map(m => m.n));
 
@@ -668,9 +769,11 @@ function calcMode1() {
         const alpha = parseFloat(document.getElementById('m1-ab-alpha').value) || 0.2;
         const power = parseFloat(document.getElementById('m1-ab-power').value) || 0.7;
         
-        if (pA <= 0 || pA >= 1 || pB <= 0 || pB >= 1) { alert('请输入有效的 p 值 (0-100%)'); return; }
-        if (delta <= 0) { alert('请输入有效的 MDE δ'); return; }
-        if (nA <= 0) { alert('请输入A组样本量 nA'); return; }
+        const abPropErrors = [];
+        if (pA <= 0 || pA >= 1 || pB <= 0 || pB >= 1) abPropErrors.push({ id: 'm1-ab-pA', message: '请输入有效的 p 值 (0-100%)' });
+        if (delta <= 0) abPropErrors.push({ id: 'm1-ab-delta', message: '请输入有效的 MDE δ' });
+        if (nA <= 0) abPropErrors.push({ id: 'm1-ab-nA', message: '请输入 A 组样本量 nA' });
+        if (abPropErrors.length) return showValidationErrors(1, abPropErrors);
 
         const z = getZ(alpha, power);
         const za = normInv(1 - alpha/2), zb = normInv(power);
@@ -719,9 +822,12 @@ function calcMode1() {
         const alpha = parseFloat(document.getElementById('m1-mean-alpha').value) || 0.2;
         const power = parseFloat(document.getElementById('m1-mean-power').value) || 0.7;
         
-        if (sigmaA <= 0 || sigmaB <= 0) { alert('请输入有效的标准差 σ'); return; }
-        if (delta <= 0) { alert('请输入有效的 MDE δ'); return; }
-        if (nA <= 0) { alert('请输入A组样本量 nA'); return; }
+        const abMeanErrors = [];
+        if (sigmaA <= 0) abMeanErrors.push({ id: 'm1-mean-sigmaA', message: '请输入有效的标准差 σ' });
+        if (sigmaB <= 0) abMeanErrors.push({ id: 'm1-mean-sigmaB', message: '请输入有效的标准差 σ' });
+        if (delta <= 0) abMeanErrors.push({ id: 'm1-mean-delta', message: '请输入有效的 MDE δ' });
+        if (nA <= 0) abMeanErrors.push({ id: 'm1-mean-nA', message: '请输入 A 组样本量 nA' });
+        if (abMeanErrors.length) return showValidationErrors(1, abMeanErrors);
 
         const z = getZ(alpha, power);
         const za = normInv(1 - alpha/2), zb = normInv(power);
@@ -765,7 +871,7 @@ function calcMode1() {
 
     document.getElementById('m1-result-content').innerHTML = html;
     document.getElementById('m1-formula').innerHTML = formula;
-    document.getElementById('m1-results').classList.add('visible');
+    showResults(1);
     setDownloadBtnVisible(1, true);
     trackEvent('calculate', 'mode1');
 }
@@ -879,6 +985,7 @@ function renderMode1PageTable_AB(alpha, power, delta) {
 
 // ===== Mode 2: 样本量 → 精度 =====
 function calcMode2() {
+    clearValidation(2);
     let mde, se, html = '', formula = '';
     
     if (scenario === 'monitoring') {
@@ -896,13 +1003,15 @@ function calcMode2() {
             formula = `<strong>加权SE：</strong>SE = √(Σ wᵢ² × pᵢ(1-pᵢ)/nᵢ) = ${(se*100).toFixed(4)}%<br>
                 <strong>MDE：</strong>δ = Z × SE = ${z.toFixed(3)} × ${(se*100).toFixed(4)}% = ${(mde*100).toFixed(4)}%`;
         } else if (n > 0) {
-            if (p <= 0 || p >= 1) { alert('请输入有效的 p 值'); return; }
+            if (p <= 0 || p >= 1) {
+                return showValidationErrors(2, [{ id: 'm2-p', message: '请输入有效的 p 值 (0-100%)' }]);
+            }
             se = calcSE_single(p, n);
             mde = calcMDE_single(p, n, alpha, power);
             formula = `<strong>SE：</strong>√(p(1-p)/n) = √(${(p*(1-p)).toFixed(4)}/${n}) = ${(se*100).toFixed(4)}%<br>
                 <strong>MDE：</strong>δ = Z × SE = ${z.toFixed(3)} × ${(se*100).toFixed(4)}% = ${(mde*100).toFixed(4)}%`;
         } else {
-            alert('请输入样本量或配置页面参数'); return;
+            return showValidationErrors(2, [{ id: 'm2-n', message: '请输入总样本量 n，或在下方配置分页面参数' }]);
         }
         
         const mdeCard = `<div class="result-summary">
@@ -952,13 +1061,19 @@ function calcMode2() {
             formula = `<strong>加权SE：</strong>SE = √(Σ wᵢ² × [pAᵢ(1-pAᵢ)/nAᵢ + pBᵢ(1-pBᵢ)/nBᵢ]) = ${(se*100).toFixed(4)}%<br>
                 <strong>MDE：</strong>δ = Z × SE = ${z.toFixed(3)} × ${(se*100).toFixed(4)}% = ${(mde*100).toFixed(4)}%`;
         } else if (nA > 0 && nB > 0) {
-            if (pA <= 0 || pA >= 1 || pB <= 0 || pB >= 1) { alert('请输入有效的 p 值'); return; }
+            if (pA <= 0 || pA >= 1 || pB <= 0 || pB >= 1) {
+                return showValidationErrors(2, [{ id: 'm2-ab-pA', message: '请输入有效的 p 值 (0-100%)' }]);
+            }
             se = calcSE_ab_proportion(pA, nA, pB, nB);
             mde = calcMDE_ab_proportion(pA, nA, pB, nB, alpha, power);
             formula = `<strong>SE：</strong>√(pA(1-pA)/nA + pB(1-pB)/nB) = ${(se*100).toFixed(4)}%<br>
                 <strong>MDE：</strong>δ = Z × SE = ${z.toFixed(3)} × ${(se*100).toFixed(4)}% = ${(mde*100).toFixed(4)}%`;
         } else {
-            alert('请输入两组样本量或配置页面参数'); return;
+            const sampleErrors = [];
+            if (nA <= 0) sampleErrors.push({ id: 'm2-ab-nA', message: '请输入 A 组样本量 nA' });
+            if (nB <= 0) sampleErrors.push({ id: 'm2-ab-nB', message: '请输入 B 组样本量 nB' });
+            if (!sampleErrors.length) sampleErrors.push({ message: '请输入两组样本量，或在下方配置分页面参数' });
+            return showValidationErrors(2, sampleErrors);
         }
         
         html = `<div class="result-summary">
@@ -994,8 +1109,12 @@ function calcMode2() {
         const alpha = parseFloat(document.getElementById('m2-mean-alpha').value) || 0.2;
         const power = parseFloat(document.getElementById('m2-mean-power').value) || 0.7;
         
-        if (sigmaA <= 0 || sigmaB <= 0) { alert('请输入有效的标准差 σ'); return; }
-        if (nA <= 0 || nB <= 0) { alert('请输入两组样本量'); return; }
+        const meanErrors = [];
+        if (sigmaA <= 0) meanErrors.push({ id: 'm2-mean-sigmaA', message: '请输入有效的标准差 σ' });
+        if (sigmaB <= 0) meanErrors.push({ id: 'm2-mean-sigmaB', message: '请输入有效的标准差 σ' });
+        if (nA <= 0) meanErrors.push({ id: 'm2-mean-nA', message: '请输入 A 组样本量 nA' });
+        if (nB <= 0) meanErrors.push({ id: 'm2-mean-nB', message: '请输入 B 组样本量 nB' });
+        if (meanErrors.length) return showValidationErrors(2, meanErrors);
 
         const z = getZ(alpha, power);
         se = calcSE_ab_mean(sigmaA, nA, sigmaB, nB);
@@ -1030,7 +1149,7 @@ function calcMode2() {
 
     document.getElementById('m2-result-content').innerHTML = html;
     document.getElementById('m2-formula').innerHTML = formula;
-    document.getElementById('m2-results').classList.add('visible');
+    showResults(2);
     setDownloadBtnVisible(2, true);
     trackEvent('calculate', 'mode2');
 }
@@ -1128,6 +1247,7 @@ function resetMode(mode) {
         if (cfg) cfg.classList.remove('active');
     });
     document.getElementById(`m${mode}-results`).classList.remove('visible');
+    clearValidation(mode);
     setDownloadBtnVisible(mode, false);
     if (mode === 2) setM2PageCsvStatus('', '');
 }

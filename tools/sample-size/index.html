@@ -241,11 +241,29 @@
         .btn-download { padding: 8px 16px; font-size: 0.82rem; background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); border-radius: 10px; }
         .btn-download:hover { color: var(--accent-cyan); border-color: var(--accent-cyan); }
         .action-row { display: flex; gap: 14px; margin-top: 28px; justify-content: flex-end; }
+
+        /* Validation */
+        .validation-banner {
+            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 12px; padding: 14px 18px; margin-top: 20px;
+            font-size: 0.85rem; color: var(--accent-red); line-height: 1.6;
+        }
+        .validation-banner[hidden] { display: none; }
+        .field-error-msg { font-size: 0.75rem; color: var(--accent-red); margin-top: 4px; display: block; }
+        input.input-error { border-color: var(--accent-red) !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important; }
         
         /* Results */
         .results-section { display: none; }
         .results-section.visible { display: block; animation: fadeIn 0.4s ease; margin-top: 32px; }
+        .results-section.highlight-flash { animation: fadeIn 0.4s ease, resultFlash 1.2s ease; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes resultFlash {
+            0%, 100% { box-shadow: none; }
+            30% { box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.35); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .results-section.visible, .results-section.highlight-flash { animation: none; }
+        }
         
         .result-summary {
             background: linear-gradient(135deg, rgba(59,130,246,0.12), rgba(139,92,246,0.12));
@@ -518,6 +536,7 @@
                 <div class="page-configs" id="m1-page-configs"></div>
             </div>
 
+            <div class="validation-banner" id="m1-validation-banner" role="alert" aria-live="polite" hidden></div>
             <div class="action-row">
                 <button class="btn btn-secondary" onclick="resetMode(1)">🔄 重置</button>
                 <button class="btn btn-primary" onclick="calcMode1()">📊 计算样本量</button>
@@ -695,6 +714,7 @@
                 <div class="page-configs" id="m2-page-configs"></div>
             </div>
 
+            <div class="validation-banner" id="m2-validation-banner" role="alert" aria-live="polite" hidden></div>
             <div class="action-row">
                 <button class="btn btn-secondary" onclick="resetMode(2)">🔄 重置</button>
                 <button class="btn btn-primary" onclick="calcMode2()">📐 计算精度</button>
