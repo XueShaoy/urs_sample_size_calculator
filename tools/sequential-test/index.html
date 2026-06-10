@@ -42,15 +42,17 @@
         .container { max-width: 1100px; margin: 0 auto; padding: 48px 24px; }
 
         .home-link {
-            position: fixed; top: 20px; right: 20px; z-index: 1000;
-            display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px;
-            border-radius: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color);
-            box-shadow: var(--shadow); color: var(--text-secondary); font-size: 0.85rem;
-            font-weight: 500; text-decoration: none; transition: all 0.25s;
+            position: fixed; top: 16px; right: 16px; z-index: 1000;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 12px;
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); color: var(--text-secondary);
+            font-size: 0.82rem; font-weight: 500; text-decoration: none;
+            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
         }
         .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
 
-        header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+        header { text-align: center; margin-bottom: 40px; padding-top: 8px; }
         h1 {
             font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
             background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan));
@@ -114,6 +116,16 @@
         .results-section.visible { display: block; animation: fadeIn 0.3s ease; margin-top: 32px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Validation */
+        .validation-banner {
+            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 12px; padding: 14px 18px; margin-top: 20px;
+            font-size: 0.85rem; color: var(--accent-red); line-height: 1.6;
+        }
+        .validation-banner[hidden] { display: none; }
+        .field-error-msg { font-size: 0.75rem; color: var(--accent-red); margin-top: 4px; display: block; }
+        input.input-error, select.input-error { border-color: var(--accent-red) !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important; }
+
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .stat-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 22px; }
         .stat-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -175,8 +187,13 @@
         .guide-step div { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.7; }
 
         @media (max-width: 768px) {
-            .home-link { top: 14px; right: 10px; padding: 8px 12px; font-size: 0.78rem; }
-            .container { padding: 72px 16px 48px; }
+            .container { padding: 16px; padding-top: 56px; }
+            .home-link {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: 12px; right: auto;
+                padding: 7px 11px;
+            }
+            .home-link-text { display: none; }
             h1 { font-size: 1.8rem; }
             .guide-grid { grid-template-columns: 1fr; }
         }
@@ -196,7 +213,10 @@
         </div>
     </div>
 
-    <a class="home-link" href="../../index.html">← 返回首页</a>
+    <a class="home-link" href="../../index.html">
+        <span aria-hidden="true">←</span>
+        <span class="home-link-text">返回首页</span>
+    </a>
 
     <div class="container">
         <header>
@@ -366,6 +386,8 @@
             </div>
         </div>
 
+        <div class="validation-banner" id="validation-banner" role="alert" aria-live="polite" hidden></div>
+
         <!-- 结果 -->
         <div class="results-section" id="results">
 
@@ -470,7 +492,69 @@ function computeBoundaries(alpha, K, spendFn, tail) {
     return looks;
 }
 
+function clearFieldError(input) {
+    if (!input) return;
+    input.classList.remove('input-error');
+    input.removeAttribute('aria-invalid');
+    const group = input.closest('.form-group') || input.parentElement;
+    group?.querySelector('.field-error-msg')?.remove();
+}
+
+function clearValidation() {
+    document.querySelectorAll('.input-error').forEach(clearFieldError);
+    const banner = document.getElementById('validation-banner');
+    if (banner) { banner.hidden = true; banner.innerHTML = ''; }
+}
+
+function setFieldError(inputId, message) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    input.classList.add('input-error');
+    input.setAttribute('aria-invalid', 'true');
+    const group = input.closest('.form-group') || input.parentElement;
+    if (!group) return;
+    let msg = group.querySelector('.field-error-msg');
+    if (!msg) {
+        msg = document.createElement('span');
+        msg.className = 'field-error-msg';
+        msg.setAttribute('role', 'alert');
+        group.appendChild(msg);
+    }
+    msg.textContent = message;
+}
+
+function showValidationErrors(errors) {
+    clearValidation();
+    const unique = [];
+    const seen = new Set();
+    for (const err of errors) {
+        const key = `${err.id || ''}:${err.message}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        unique.push(err);
+    }
+    let firstFocus = null;
+    for (const err of unique) {
+        if (err.id) {
+            setFieldError(err.id, err.message);
+            if (!firstFocus) firstFocus = document.getElementById(err.id);
+        }
+    }
+    const banner = document.getElementById('validation-banner');
+    if (banner) {
+        banner.hidden = false;
+        banner.innerHTML = unique.map(e => `<div>⚠ ${e.message}</div>`).join('');
+    }
+    document.getElementById('results').classList.remove('visible');
+    const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+    const target = firstFocus || banner;
+    if (firstFocus) firstFocus.focus({ preventScroll: true });
+    target?.scrollIntoView({ behavior: scrollBehavior, block: 'center' });
+    return false;
+}
+
 function compute() {
+    clearValidation();
     const N = parseInt(document.getElementById('total-n').value) || 0;
     const dailyN = parseFloat(document.getElementById('daily-n').value) || 0;
     const K = Math.min(20, Math.max(2, parseInt(document.getElementById('k-looks').value) || 5));
@@ -480,8 +564,13 @@ function compute() {
     const currentN = parseFloat(document.getElementById('current-n').value) || 0;
     const currentZ = parseFloat(document.getElementById('current-z').value);
     const hasCurrentZ = document.getElementById('current-z').value.trim() !== '';
+    const hasCurrentN = document.getElementById('current-n').value.trim() !== '';
 
-    if (N <= 0) { alert('请输入计划总样本量 N'); return; }
+    const errors = [];
+    if (N <= 0) errors.push({ id: 'total-n', message: '请输入计划总样本量 N' });
+    if (hasCurrentZ && !(currentN > 0)) errors.push({ id: 'current-n', message: '填写「当前 z 统计量」时需同时填写当前累计样本量 n' });
+    if (hasCurrentN && currentN > 0 && N > 0 && currentN > N) errors.push({ id: 'current-n', message: '当前样本量不应超过计划总样本量 N' });
+    if (errors.length) return showValidationErrors(errors);
 
     const spendFn = bType === 'obf' ? (a, t) => spendOBF(a, t) : (a, t) => spendPocock(a, t);
     const looks = computeBoundaries(alpha, K, spendFn, tail);

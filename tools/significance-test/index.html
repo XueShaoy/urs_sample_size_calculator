@@ -42,34 +42,35 @@
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
 
-        /* Test-type Switch (top-left) */
+        /* Floating nav — corner pills, no full-width bar */
         .scenario-switch {
-            position: fixed; top: 20px; left: 20px; z-index: 1000;
+            position: fixed; top: 16px; left: 16px; z-index: 1000;
             display: flex; background: var(--bg-secondary); border-radius: 12px;
-            padding: 4px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
+            padding: 3px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
         }
         .scenario-btn {
-            padding: 10px 18px; border: none; background: transparent;
-            color: var(--text-secondary); font-size: 0.85rem; font-family: inherit;
-            cursor: pointer; border-radius: 8px; transition: all 0.25s;
-            display: flex; align-items: center; gap: 8px; font-weight: 500;
+            padding: 8px 14px; border: none; background: transparent;
+            color: var(--text-secondary); font-size: 0.82rem; font-family: inherit;
+            cursor: pointer; border-radius: 9px; transition: background 0.2s, color 0.2s;
+            display: flex; align-items: center; gap: 6px; font-weight: 500;
+            white-space: nowrap;
         }
+        .scenario-btn-short { display: none; }
         .scenario-btn.active { background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; }
         .scenario-btn:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); }
 
-        /* Back to Home */
         .home-link {
-            position: fixed; top: 20px; right: 20px; z-index: 1000;
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 16px; border-radius: 12px;
+            position: fixed; top: 16px; right: 16px; z-index: 1000;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 12px;
             background: var(--bg-secondary); border: 1px solid var(--border-color);
             box-shadow: var(--shadow); color: var(--text-secondary);
-            font-size: 0.85rem; font-weight: 500; text-decoration: none;
-            transition: all 0.25s;
+            font-size: 0.82rem; font-weight: 500; text-decoration: none;
+            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
         }
         .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
 
-        header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+        header { text-align: center; margin-bottom: 40px; padding-top: 8px; }
         h1 {
             font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
@@ -188,6 +189,16 @@
         .results-section.visible { display: block; animation: fadeIn 0.4s ease; margin-top: 32px; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
 
+        /* Validation */
+        .validation-banner {
+            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35);
+            border-radius: 12px; padding: 14px 18px; margin-top: 20px;
+            font-size: 0.85rem; color: var(--accent-red); line-height: 1.6;
+        }
+        .validation-banner[hidden] { display: none; }
+        .field-error-msg { font-size: 0.75rem; color: var(--accent-red); margin-top: 4px; display: block; }
+        input.input-error, select.input-error { border-color: var(--accent-red) !important; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important; }
+
         .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
         .summary-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; }
         .summary-card .s-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; }
@@ -222,11 +233,24 @@
         .formula-display strong { color: var(--accent-purple); }
 
         @media (max-width: 768px) {
-            .container { padding: 24px 16px; padding-top: 110px; }
-            .scenario-switch { top: 56px; left: 10px; right: 10px; justify-content: center; }
-            .home-link { top: 10px; right: 10px; padding: 8px 12px; }
+            .container { padding: 16px; padding-top: 56px; }
+            .home-link {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: 12px; right: auto;
+                padding: 7px 11px;
+            }
+            .home-link-text { display: none; }
+            .scenario-switch {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: auto; right: 12px;
+            }
+            .scenario-btn { padding: 7px 10px; font-size: 0.78rem; }
             .form-grid { grid-template-columns: 1fr; }
             .summary-row { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 420px) {
+            .scenario-btn-full { display: none; }
+            .scenario-btn-short { display: inline; }
         }
     </style>
     <link rel="stylesheet" href="../../assets/changelog.css">
@@ -244,11 +268,20 @@
         </div>
     </div>
 
-    <a class="home-link" href="../../index.html">← 返回首页</a>
+    <a class="home-link" href="../../index.html">
+        <span aria-hidden="true">←</span>
+        <span class="home-link-text">返回首页</span>
+    </a>
 
-    <div class="scenario-switch">
-        <button class="scenario-btn active" data-test="single" onclick="switchTest('single')">📍 单样本检验</button>
-        <button class="scenario-btn" data-test="two" onclick="switchTest('two')">⚖️ 双样本检验</button>
+    <div class="scenario-switch" role="tablist" aria-label="检验类型">
+        <button type="button" class="scenario-btn active" role="tab" aria-selected="true" data-test="single" onclick="switchTest('single')">
+            <span class="scenario-btn-short">单样</span>
+            <span class="scenario-btn-full">📍 单样本检验</span>
+        </button>
+        <button type="button" class="scenario-btn" role="tab" aria-selected="false" data-test="two" onclick="switchTest('two')">
+            <span class="scenario-btn-short">双样</span>
+            <span class="scenario-btn-full">⚖️ 双样本检验</span>
+        </button>
     </div>
 
     <div class="container">
@@ -328,6 +361,8 @@
             <button class="btn btn-secondary" onclick="clearRows()">🔄 重置</button>
             <button class="btn btn-primary" onclick="runTest()">🧮 运行检验</button>
         </div>
+
+        <div class="validation-banner" id="validation-banner" role="alert" aria-live="polite" hidden></div>
 
         <!-- 结果 -->
         <div class="results-section" id="results">
@@ -547,22 +582,7 @@ function clearRows() {
     document.getElementById('results').classList.remove('visible');
     setCsvStatus('', '');
     lastRun = null;
-}
-
-function getRows() {
-    const cols = COLS[testType];
-    const rows = [];
-    document.querySelectorAll('#data-tbody tr').forEach(tr => {
-        const obj = {};
-        let hasData = false;
-        tr.querySelectorAll('input').forEach(inp => {
-            const v = inp.value.trim();
-            if (v !== '' && inp.dataset.key !== 'metric') hasData = true;
-            obj[inp.dataset.key] = v;
-        });
-        if (hasData) rows.push(obj);
-    });
-    return rows;
+    clearValidation();
 }
 
 function loadSample() {
@@ -642,34 +662,109 @@ function setCsvStatus(msg, cls) {
 }
 
 // ====== 运行检验 ======
+function markInputError(input) {
+    if (!input) return;
+    input.classList.add('input-error');
+    input.setAttribute('aria-invalid', 'true');
+}
+
+function clearValidation() {
+    document.querySelectorAll('input.input-error').forEach(inp => {
+        inp.classList.remove('input-error');
+        inp.removeAttribute('aria-invalid');
+    });
+    const banner = document.getElementById('validation-banner');
+    if (banner) { banner.hidden = true; banner.innerHTML = ''; }
+}
+
+function showValidationErrors(errors) {
+    clearValidation();
+    const unique = [];
+    const seen = new Set();
+    for (const err of errors) {
+        if (seen.has(err.message)) continue;
+        seen.add(err.message);
+        unique.push(err);
+    }
+    let firstFocus = null;
+    for (const err of unique) {
+        const els = err.els || (err.el ? [err.el] : (err.id ? [document.getElementById(err.id)] : []));
+        for (const el of els) {
+            if (!el) continue;
+            markInputError(el);
+            if (!firstFocus) firstFocus = el;
+        }
+    }
+    const banner = document.getElementById('validation-banner');
+    if (banner) {
+        banner.hidden = false;
+        banner.innerHTML = unique.map(e => `<div>⚠ ${e.message}</div>`).join('');
+    }
+    document.getElementById('results').classList.remove('visible');
+    const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+    const target = firstFocus || banner;
+    if (firstFocus) firstFocus.focus({ preventScroll: true });
+    target?.scrollIntoView({ behavior: scrollBehavior, block: 'center' });
+    return false;
+}
+
+/** 与 getRows 一致，但保留每行 DOM 引用以便高亮具体单元格 */
+function getDataRows() {
+    const out = [];
+    document.querySelectorAll('#data-tbody tr').forEach(tr => {
+        const obj = {};
+        const els = {};
+        let hasData = false;
+        tr.querySelectorAll('input').forEach(inp => {
+            const v = inp.value.trim();
+            const key = inp.dataset.key;
+            if (v !== '' && key !== 'metric') hasData = true;
+            obj[key] = v;
+            els[key] = inp;
+        });
+        if (hasData) out.push({ obj, els });
+    });
+    return out;
+}
+
 function runTest() {
+    clearValidation();
     const alpha = parseFloat(document.getElementById('alpha').value) || 0.05;
     const tail = document.getElementById('tail').value;
     const defP0 = (parseFloat(document.getElementById('default-p0').value) || 0) / 100;
-    const rows = getRows();
-    if (!rows.length) { alert('请先录入或导入至少一行有效数据'); return; }
+    const dataRows = getDataRows();
+    if (!dataRows.length) return showValidationErrors([{ message: '请先录入或导入至少一行有效数据' }]);
 
     const results = [];
-    for (let i = 0; i < rows.length; i++) {
-        const r = rows[i];
+    const errors = [];
+    for (let i = 0; i < dataRows.length; i++) {
+        const { obj: r, els } = dataRows[i];
         const metric = (r.metric && r.metric.trim()) || `指标 ${i + 1}`;
         if (testType === 'single') {
             const x = parseFloat(r.x), n = parseFloat(r.n);
             let p0 = r.p0 !== '' && !isNaN(parseFloat(r.p0)) ? parseFloat(r.p0) / 100 : defP0;
-            if (!(n > 0) || !(x >= 0) || x > n) { alert(`第 ${i + 1} 行（${metric}）的 x/n 无效：需满足 0 ≤ x ≤ n 且 n>0`); return; }
-            if (!(p0 > 0 && p0 < 1)) { alert(`第 ${i + 1} 行（${metric}）的基准比例 p₀ 无效（需在 0-100% 之间）`); return; }
+            if (!(n > 0) || !(x >= 0) || x > n) {
+                errors.push({ els: [els.x, els.n], message: `第 ${i + 1} 行（${metric}）的 x/n 无效：需满足 0 ≤ x ≤ n 且 n>0` });
+                continue;
+            }
+            if (!(p0 > 0 && p0 < 1)) {
+                errors.push({ els: [els.p0], message: `第 ${i + 1} 行（${metric}）的基准比例 p₀ 无效（需在 0-100% 之间）` });
+                continue;
+            }
             const t = testSingle(x, n, p0, alpha, tail);
             results.push({ metric, raw: { x, n }, ...t });
         } else {
             const x1 = parseFloat(r.x1), n1 = parseFloat(r.n1), x2 = parseFloat(r.x2), n2 = parseFloat(r.n2);
             if (!(n1 > 0 && n2 > 0) || !(x1 >= 0 && x2 >= 0) || x1 > n1 || x2 > n2) {
-                alert(`第 ${i + 1} 行（${metric}）的样本数据无效：需满足 0 ≤ x ≤ n 且 n>0`); return;
+                errors.push({ els: [els.x1, els.n1, els.x2, els.n2], message: `第 ${i + 1} 行（${metric}）的样本数据无效：需满足 0 ≤ x ≤ n 且 n>0` });
+                continue;
             }
             const t = testTwo(x1, n1, x2, n2, alpha, tail);
             results.push({ metric, raw: { x1, n1, x2, n2 }, ...t });
         }
     }
 
+    if (errors.length) return showValidationErrors(errors);
     // 多重比较校正：基于校正后 p 值判定显著性
     const correction = document.getElementById('correction').value;
     const pAdj = adjustPValues(results.map(r => r.p), correction);
@@ -882,7 +977,7 @@ function saveCsv(rows, fname) {
 }
 
 function downloadResults() {
-    if (!lastRun || !lastRun.results.length) { alert('请先运行检验后再下载结果'); return; }
+    if (!lastRun || !lastRun.results.length) { return showValidationErrors([{ message: '请先运行检验后再下载结果' }]); }
     const { results, alpha, tail, correction, testType: tt } = lastRun;
     const tailTxt = { two: '双侧', greater: '右侧', less: '左侧' }[tail];
     const ciPct = ((1 - alpha) * 100).toFixed(0);
@@ -955,7 +1050,11 @@ function downloadTemplate() {
 // ====== UI 切换 ======
 function switchTest(t) {
     testType = t;
-    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.toggle('active', b.dataset.test === t));
+    document.querySelectorAll('.scenario-btn').forEach(b => {
+        const selected = b.dataset.test === t;
+        b.classList.toggle('active', selected);
+        b.setAttribute('aria-selected', selected ? 'true' : 'false');
+    });
     document.getElementById('test-badge').textContent = t === 'single' ? '📍 单样本 z 比例检验' : '⚖️ 双样本 z 比例检验';
     document.getElementById('single-baseline-group').style.display = t === 'single' ? 'flex' : 'none';
     updateParamInfo();
