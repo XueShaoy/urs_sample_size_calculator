@@ -42,34 +42,35 @@
         }
         .container { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
 
-        /* Test-type Switch (top-left) */
+        /* Floating nav — corner pills, no full-width bar */
         .scenario-switch {
-            position: fixed; top: 20px; left: 20px; z-index: 1000;
+            position: fixed; top: 16px; left: 16px; z-index: 1000;
             display: flex; background: var(--bg-secondary); border-radius: 12px;
-            padding: 4px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
+            padding: 3px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
         }
         .scenario-btn {
-            padding: 10px 18px; border: none; background: transparent;
-            color: var(--text-secondary); font-size: 0.85rem; font-family: inherit;
-            cursor: pointer; border-radius: 8px; transition: all 0.25s;
-            display: flex; align-items: center; gap: 8px; font-weight: 500;
+            padding: 8px 14px; border: none; background: transparent;
+            color: var(--text-secondary); font-size: 0.82rem; font-family: inherit;
+            cursor: pointer; border-radius: 9px; transition: background 0.2s, color 0.2s;
+            display: flex; align-items: center; gap: 6px; font-weight: 500;
+            white-space: nowrap;
         }
+        .scenario-btn-short { display: none; }
         .scenario-btn.active { background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; }
         .scenario-btn:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); }
 
-        /* Back to Home */
         .home-link {
-            position: fixed; top: 20px; right: 20px; z-index: 1000;
-            display: inline-flex; align-items: center; gap: 8px;
-            padding: 10px 16px; border-radius: 12px;
+            position: fixed; top: 16px; right: 16px; z-index: 1000;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 12px;
             background: var(--bg-secondary); border: 1px solid var(--border-color);
             box-shadow: var(--shadow); color: var(--text-secondary);
-            font-size: 0.85rem; font-weight: 500; text-decoration: none;
-            transition: all 0.25s;
+            font-size: 0.82rem; font-weight: 500; text-decoration: none;
+            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
         }
         .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
 
-        header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+        header { text-align: center; margin-bottom: 40px; padding-top: 8px; }
         h1 {
             font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
             background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
@@ -232,11 +233,24 @@
         .formula-display strong { color: var(--accent-purple); }
 
         @media (max-width: 768px) {
-            .container { padding: 24px 16px; padding-top: 110px; }
-            .scenario-switch { top: 56px; left: 10px; right: 10px; justify-content: center; }
-            .home-link { top: 10px; right: 10px; padding: 8px 12px; }
+            .container { padding: 16px; padding-top: 56px; }
+            .home-link {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: 12px; right: auto;
+                padding: 7px 11px;
+            }
+            .home-link-text { display: none; }
+            .scenario-switch {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: auto; right: 12px;
+            }
+            .scenario-btn { padding: 7px 10px; font-size: 0.78rem; }
             .form-grid { grid-template-columns: 1fr; }
             .summary-row { grid-template-columns: repeat(2, 1fr); }
+        }
+        @media (max-width: 420px) {
+            .scenario-btn-full { display: none; }
+            .scenario-btn-short { display: inline; }
         }
     </style>
     <link rel="stylesheet" href="../../assets/changelog.css">
@@ -254,11 +268,20 @@
         </div>
     </div>
 
-    <a class="home-link" href="../../index.html">← 返回首页</a>
+    <a class="home-link" href="../../index.html">
+        <span aria-hidden="true">←</span>
+        <span class="home-link-text">返回首页</span>
+    </a>
 
-    <div class="scenario-switch">
-        <button class="scenario-btn active" data-test="single" onclick="switchTest('single')">📍 单样本检验</button>
-        <button class="scenario-btn" data-test="two" onclick="switchTest('two')">⚖️ 双样本检验</button>
+    <div class="scenario-switch" role="tablist" aria-label="检验类型">
+        <button type="button" class="scenario-btn active" role="tab" aria-selected="true" data-test="single" onclick="switchTest('single')">
+            <span class="scenario-btn-short">单样</span>
+            <span class="scenario-btn-full">📍 单样本检验</span>
+        </button>
+        <button type="button" class="scenario-btn" role="tab" aria-selected="false" data-test="two" onclick="switchTest('two')">
+            <span class="scenario-btn-short">双样</span>
+            <span class="scenario-btn-full">⚖️ 双样本检验</span>
+        </button>
     </div>
 
     <div class="container">
@@ -1027,7 +1050,11 @@ function downloadTemplate() {
 // ====== UI 切换 ======
 function switchTest(t) {
     testType = t;
-    document.querySelectorAll('.scenario-btn').forEach(b => b.classList.toggle('active', b.dataset.test === t));
+    document.querySelectorAll('.scenario-btn').forEach(b => {
+        const selected = b.dataset.test === t;
+        b.classList.toggle('active', selected);
+        b.setAttribute('aria-selected', selected ? 'true' : 'false');
+    });
     document.getElementById('test-badge').textContent = t === 'single' ? '📍 单样本 z 比例检验' : '⚖️ 双样本 z 比例检验';
     document.getElementById('single-baseline-group').style.display = t === 'single' ? 'flex' : 'none';
     updateParamInfo();

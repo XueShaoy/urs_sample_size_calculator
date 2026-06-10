@@ -41,31 +41,36 @@
         }
         .container { max-width: 1100px; margin: 0 auto; padding: 48px 24px; }
 
+        /* Floating nav — corner pills, no full-width bar */
         .scenario-switch {
-            position: fixed; top: 20px; left: 20px; z-index: 1000;
+            position: fixed; top: 16px; left: 16px; z-index: 1000;
             display: flex; background: var(--bg-secondary); border-radius: 12px;
-            padding: 4px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
+            padding: 3px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
         }
         .scenario-btn {
-            padding: 10px 18px; border: none; background: transparent;
-            color: var(--text-secondary); font-size: 0.85rem; font-family: inherit;
-            cursor: pointer; border-radius: 8px; transition: all 0.25s;
-            display: flex; align-items: center; gap: 8px; font-weight: 500;
+            padding: 8px 14px; border: none; background: transparent;
+            color: var(--text-secondary); font-size: 0.82rem; font-family: inherit;
+            cursor: pointer; border-radius: 9px; transition: background 0.2s, color 0.2s;
+            display: flex; align-items: center; gap: 6px; font-weight: 500;
+            white-space: nowrap;
         }
+        .scenario-btn-short { display: none; }
         .scenario-btn.active { background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)); color: white; }
         .scenario-btn.active.ab { background: linear-gradient(135deg, var(--accent-orange), var(--accent-red)); }
         .scenario-btn:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); }
 
         .home-link {
-            position: fixed; top: 20px; right: 20px; z-index: 1000;
-            display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px;
-            border-radius: 12px; background: var(--bg-secondary); border: 1px solid var(--border-color);
-            box-shadow: var(--shadow); color: var(--text-secondary); font-size: 0.85rem;
-            font-weight: 500; text-decoration: none; transition: all 0.25s;
+            position: fixed; top: 16px; right: 16px; z-index: 1000;
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 8px 14px; border-radius: 12px;
+            background: var(--bg-secondary); border: 1px solid var(--border-color);
+            box-shadow: var(--shadow); color: var(--text-secondary);
+            font-size: 0.82rem; font-weight: 500; text-decoration: none;
+            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
         }
         .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
 
-        header { text-align: center; margin-bottom: 40px; padding-top: 20px; }
+        header { text-align: center; margin-bottom: 40px; padding-top: 8px; }
         h1 {
             font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
             background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan), var(--accent-blue));
@@ -184,9 +189,23 @@
         .mode-tab.active { background: var(--bg-tertiary); color: var(--text-primary); }
 
         @media (max-width: 768px) {
-            .scenario-switch { top: 56px; left: 10px; right: 10px; justify-content: center; }
-            .home-link { top: 14px; right: 10px; padding: 8px 12px; font-size: 0.78rem; }
+            .container { padding: 16px; padding-top: 56px; }
+            .home-link {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: 12px; right: auto;
+                padding: 7px 11px;
+            }
+            .home-link-text { display: none; }
+            .scenario-switch {
+                top: max(10px, env(safe-area-inset-top, 0px));
+                left: auto; right: 12px;
+            }
+            .scenario-btn { padding: 7px 10px; font-size: 0.78rem; }
             .chart-grid { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 420px) {
+            .scenario-btn-full { display: none; }
+            .scenario-btn-short { display: inline; }
         }
     </style>
     <link rel="stylesheet" href="../../assets/changelog.css">
@@ -204,11 +223,21 @@
         </div>
     </div>
 
-    <div class="scenario-switch">
-        <button class="scenario-btn active" data-scenario="monitoring" onclick="switchScenario('monitoring')">📈 长期观测</button>
-        <button class="scenario-btn" data-scenario="ab-test" onclick="switchScenario('ab-test')">🧪 AB 测试</button>
+    <a class="home-link" href="../../index.html">
+        <span aria-hidden="true">←</span>
+        <span class="home-link-text">返回首页</span>
+    </a>
+
+    <div class="scenario-switch" role="tablist" aria-label="分析场景">
+        <button type="button" class="scenario-btn active" role="tab" aria-selected="true" data-scenario="monitoring" onclick="switchScenario('monitoring')">
+            <span class="scenario-btn-short">观测</span>
+            <span class="scenario-btn-full">📈 长期观测</span>
+        </button>
+        <button type="button" class="scenario-btn" role="tab" aria-selected="false" data-scenario="ab-test" onclick="switchScenario('ab-test')">
+            <span class="scenario-btn-short">AB</span>
+            <span class="scenario-btn-full">🧪 AB 测试</span>
+        </button>
     </div>
-    <a class="home-link" href="../../index.html">← 返回首页</a>
 
     <div class="container">
         <header>
@@ -364,6 +393,7 @@ function switchScenario(s) {
         const active = btn.dataset.scenario === s;
         btn.classList.toggle('active', active);
         btn.classList.toggle('ab', active && s === 'ab-test');
+        btn.setAttribute('aria-selected', active ? 'true' : 'false');
     });
     const badge = document.getElementById('scenario-badge');
     badge.className = 'scenario-badge ' + (s === 'ab-test' ? 'ab-test' : 'monitoring');
