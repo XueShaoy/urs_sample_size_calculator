@@ -104,3 +104,10 @@ sl-alert {
 sl-alert::part(base) {
     border-radius: 14px;
 }
+
+/* Trigger icon for sl-tooltip-wrapped info hints (replaces .tooltip[data-tip]) */
+.tip-icon {
+    color: var(--accent-cyan);
+    cursor: help;
+    display: inline-flex;
+}
