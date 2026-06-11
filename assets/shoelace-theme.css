@@ -1,0 +1,106 @@
+/* ============================================================
+   URS DS Tools — Shoelace token overrides (dark)
+   Maps Shoelace design tokens onto the design system in
+   styles.css so web components match the dark UI.
+   Generic & reusable across all tool pages — no page specifics.
+   Requires <html class="sl-theme-dark"> and Shoelace's dark.css.
+   ============================================================ */
+
+:root,
+.sl-theme-dark {
+    /* Typography */
+    --sl-font-sans: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    --sl-font-mono: 'JetBrains Mono', monospace;
+
+    /* Surfaces */
+    --sl-panel-background-color: var(--bg-card);
+    --sl-panel-border-color: var(--border-color);
+    --sl-overlay-background-color: rgba(0, 0, 0, 0.6);
+
+    /* Inputs */
+    --sl-input-background-color: var(--bg-secondary);
+    --sl-input-background-color-hover: var(--bg-secondary);
+    --sl-input-background-color-focus: var(--bg-secondary);
+    --sl-input-border-color: var(--border-color);
+    --sl-input-border-color-hover: var(--accent-blue);
+    --sl-input-border-color-focus: var(--accent-blue);
+    --sl-input-color: var(--text-primary);
+    --sl-input-placeholder-color: var(--text-muted);
+    --sl-input-label-color: var(--text-secondary);
+    --sl-input-help-text-color: var(--text-muted);
+    --sl-input-focus-ring-color: rgba(59, 130, 246, 0.25);
+
+    /* Radii — match .card / inputs */
+    --sl-border-radius-small: 8px;
+    --sl-border-radius-medium: 12px;
+    --sl-border-radius-large: 14px;
+
+    /* Tooltip */
+    --sl-tooltip-background-color: var(--bg-primary);
+    --sl-tooltip-color: var(--text-primary);
+    --sl-tooltip-border-radius: 10px;
+    --sl-tooltip-font-size: 0.75rem;
+    --sl-tooltip-padding: 12px 16px;
+
+    /* Shadows */
+    --sl-shadow-large: var(--shadow);
+    --sl-shadow-medium: 0 6px 24px rgba(0, 0, 0, 0.45);
+
+    /* Neutral scale → dark backgrounds/text */
+    --sl-color-neutral-0: var(--bg-card);
+    --sl-color-neutral-50: var(--bg-secondary);
+    --sl-color-neutral-100: var(--bg-tertiary);
+    --sl-color-neutral-200: var(--border-color);
+    --sl-color-neutral-300: var(--border-color);
+    --sl-color-neutral-500: var(--text-muted);
+    --sl-color-neutral-600: var(--text-secondary);
+    --sl-color-neutral-700: var(--text-secondary);
+    --sl-color-neutral-900: var(--text-primary);
+    --sl-color-neutral-1000: var(--text-primary);
+
+    /* Primary → accent blue */
+    --sl-color-primary-500: var(--accent-blue);
+    --sl-color-primary-600: var(--accent-blue);
+    --sl-color-primary-700: var(--accent-blue);
+
+    /* Semantic accents (alerts) */
+    --sl-color-success-500: var(--accent-green);
+    --sl-color-success-600: var(--accent-green);
+    --sl-color-danger-500: var(--accent-red);
+    --sl-color-danger-600: var(--accent-red);
+    --sl-color-warning-500: var(--accent-orange);
+    --sl-color-warning-600: var(--accent-orange);
+}
+
+/* Prevent FOUC: before the autoloader upgrades <sl-details>, the browser
+   renders its slotted content fully expanded, then collapses on upgrade —
+   causing a visible jump. Hide it until the component is defined. */
+sl-details:not(:defined) { display: none; }
+
+/* sl-details — align the collapsible card with .card styling */
+sl-details {
+    display: block;
+    margin-bottom: 24px;
+    --sl-spacing-medium: 18px;
+}
+sl-details::part(base) {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 20px;
+}
+sl-details::part(header) {
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 24px 28px;
+}
+sl-details::part(content) {
+    padding: 0 28px 24px;
+}
+
+/* sl-alert — let the alert fill its container like the old banner */
+sl-alert {
+    --sl-panel-background-color: var(--bg-secondary);
+}
+sl-alert::part(base) {
+    border-radius: 14px;
+}

@@ -24,6 +24,7 @@
 
 /* --- Reset --- */
 * { margin: 0; padding: 0; box-sizing: border-box; }
+[x-cloak] { display: none !important; }
 :focus { outline: none; }
 :focus-visible {
     outline: 2px solid var(--accent-cyan);
