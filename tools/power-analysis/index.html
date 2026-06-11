@@ -12,142 +12,13 @@
       gtag('config', 'G-VQV08H7W6V');
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/styles.css">
     <style>
-        :root {
-            --bg-primary: #0a0e14;
-            --bg-secondary: #141a22;
-            --bg-tertiary: #1c242e;
-            --bg-card: #151c25;
-            --border-color: #2a3441;
-            --text-primary: #e8eaed;
-            --text-secondary: #9ca3af;
-            --text-muted: #6b7280;
-            --accent-blue: #3b82f6;
-            --accent-cyan: #06b6d4;
-            --accent-green: #10b981;
-            --accent-orange: #f59e0b;
-            --accent-purple: #8b5cf6;
-            --accent-red: #ef4444;
-            --shadow: 0 4px 32px rgba(0,0,0,0.5);
-            --glow-blue: 0 0 20px rgba(59, 130, 246, 0.3);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary); color: var(--text-primary);
-            min-height: 100vh; line-height: 1.7;
-            background-image: radial-gradient(ellipse at 10% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
-                              radial-gradient(ellipse at 90% 80%, rgba(139,92,246,0.06) 0%, transparent 50%);
-        }
-        .container { max-width: 1100px; margin: 0 auto; padding: 48px 24px; }
-
-        /* Floating nav — corner pills, no full-width bar */
-        .scenario-switch {
-            position: fixed; top: 16px; left: 16px; z-index: 1000;
-            display: flex; background: var(--bg-secondary); border-radius: 12px;
-            padding: 3px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
-        }
-        .scenario-btn {
-            padding: 8px 14px; border: none; background: transparent;
-            color: var(--text-secondary); font-size: 0.82rem; font-family: inherit;
-            cursor: pointer; border-radius: 9px; transition: background 0.2s, color 0.2s;
-            display: flex; align-items: center; gap: 6px; font-weight: 500;
-            white-space: nowrap;
-        }
-        .scenario-btn-short { display: none; }
+        h1 { background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan), var(--accent-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .scenario-btn.active { background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)); color: white; }
         .scenario-btn.active.ab { background: linear-gradient(135deg, var(--accent-orange), var(--accent-red)); }
-        .scenario-btn:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); }
-
-        .home-link {
-            position: fixed; top: 16px; right: 16px; z-index: 1000;
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 14px; border-radius: 12px;
-            background: var(--bg-secondary); border: 1px solid var(--border-color);
-            box-shadow: var(--shadow); color: var(--text-secondary);
-            font-size: 0.82rem; font-weight: 500; text-decoration: none;
-            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
-        }
-        .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
-
-        header { text-align: center; margin-bottom: 40px; padding-top: 8px; }
-        h1 {
-            font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
-            background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan), var(--accent-blue));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .subtitle { color: var(--text-secondary); font-size: 1rem; }
-        .scenario-badge {
-            display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
-            border-radius: 20px; font-size: 0.8rem; font-weight: 500; margin-top: 12px;
-        }
         .scenario-badge.monitoring { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
         .scenario-badge.ab-test { background: rgba(245,158,11,0.15); color: var(--accent-orange); border: 1px solid rgba(245,158,11,0.3); }
-
-        .card {
-            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px;
-            padding: 32px; margin-bottom: 24px; position: relative;
-        }
-        .card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
-        }
-        .card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
-        .card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
-        .card-icon.green { background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2)); }
-        .card-title { font-size: 1.15rem; font-weight: 600; }
-        .card-desc { font-size: 0.8rem; color: var(--text-secondary); margin-top: 3px; }
-
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
-        .form-group { display: flex; flex-direction: column; gap: 8px; position: relative; }
-        label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-
-        .tooltip { position: relative; cursor: help; color: var(--accent-cyan); display: inline-flex; }
-        .tooltip::after {
-            content: attr(data-tip); position: absolute;
-            bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-            background: var(--bg-primary); color: var(--text-primary);
-            padding: 12px 16px; border-radius: 10px; font-size: 0.75rem; font-weight: 400;
-            opacity: 0; visibility: hidden; transition: all 0.15s; z-index: 99999;
-            border: 1px solid var(--border-color); width: 240px;
-            white-space: normal; text-align: left; line-height: 1.6;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.6); pointer-events: none;
-        }
-        .tooltip:hover::after { opacity: 1; visibility: visible; }
-        .tooltip.tip-down::after { bottom: auto; top: calc(100% + 8px); }
-
-        input[type="number"], select {
-            background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px;
-            padding: 12px 16px; color: var(--text-primary); font-size: 0.95rem;
-            font-family: 'JetBrains Mono', monospace; width: 100%;
-        }
-        select { font-family: 'Noto Sans SC', sans-serif; cursor: pointer; }
-        input:focus, select:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-        input::placeholder { color: var(--text-muted); }
-
-        .btn {
-            padding: 14px 32px; border: none; border-radius: 12px; font-size: 0.95rem;
-            font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.25s;
-            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .btn-primary { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--glow-blue); }
-        .action-row { display: flex; gap: 14px; margin-top: 28px; justify-content: flex-end; }
-
-        .results-section { display: none; }
-        .results-section.visible { display: block; animation: fadeIn 0.3s ease; margin-top: 32px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Validation */
-        .validation-banner {
-            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35);
-            border-radius: 12px; padding: 14px 18px; margin-top: 20px;
-            font-size: 0.85rem; color: var(--accent-red); line-height: 1.6;
-        }
-        .validation-banner[hidden] { display: none; }
-        .field-error-msg { font-size: 0.75rem; color: var(--accent-red); margin-top: 4px; display: block; }
-        input.input-error, select.input-error { border-color: var(--accent-red) !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important; }
-
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .stat-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 22px; }
         .stat-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -156,7 +27,6 @@
         .stat-value.good { color: var(--accent-green); }
         .stat-unit { font-size: 0.85rem; color: var(--text-secondary); margin-left: 4px; font-family: inherit; font-weight: 400; }
         .stat-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; }
-
         .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         .chart-wrap { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; }
         .chart-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
@@ -166,47 +36,20 @@
         .chart-interactive { position: relative; }
         .chart-hit-area { cursor: crosshair; }
         .chart-crosshair { pointer-events: none; }
-        .chart-tooltip {
-            position: absolute; pointer-events: none; z-index: 2;
-            padding: 8px 12px; border-radius: 8px;
-            background: var(--bg-tertiary); border: 1px solid var(--border-color);
-            box-shadow: var(--shadow); font-size: 0.78rem; line-height: 1.5;
-            opacity: 0; transition: opacity 0.12s; white-space: nowrap;
-        }
+        .chart-tooltip { position: absolute; pointer-events: none; z-index: 2; padding: 8px 12px; border-radius: 8px; background: var(--bg-tertiary); border: 1px solid var(--border-color); box-shadow: var(--shadow); font-size: 0.78rem; line-height: 1.5; opacity: 0; transition: opacity 0.12s; white-space: nowrap; }
         .chart-tooltip.visible { opacity: 1; }
         .chart-tooltip-day { color: var(--text-secondary); margin-bottom: 2px; }
         .chart-tooltip-value { font-family: 'JetBrains Mono', monospace; font-weight: 500; }
-
         .formula-section { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 24px; margin-top: 24px; }
         .formula-label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; font-weight: 500; }
         .formula-text { font-size: 0.82rem; color: var(--text-secondary); line-height: 2; }
-
         .traffic-mode-row { display: none; align-items: center; gap: 12px; margin-bottom: 20px; }
         .traffic-mode-row.visible { display: flex; }
         .traffic-mode-label { font-size: 0.82rem; color: var(--text-secondary); white-space: nowrap; }
         .mode-tabs { display: flex; background: var(--bg-secondary); border-radius: 8px; padding: 3px; border: 1px solid var(--border-color); }
         .mode-tab { padding: 6px 14px; border: none; background: transparent; color: var(--text-secondary); font-size: 0.8rem; font-family: inherit; cursor: pointer; border-radius: 5px; transition: all 0.2s; font-weight: 500; }
         .mode-tab.active { background: var(--bg-tertiary); color: var(--text-primary); }
-
-        @media (max-width: 768px) {
-            .container { padding: 16px; padding-top: 56px; }
-            .home-link {
-                top: max(10px, env(safe-area-inset-top, 0px));
-                left: 12px; right: auto;
-                padding: 7px 11px;
-            }
-            .home-link-text { display: none; }
-            .scenario-switch {
-                top: max(10px, env(safe-area-inset-top, 0px));
-                left: auto; right: 12px;
-            }
-            .scenario-btn { padding: 7px 10px; font-size: 0.78rem; }
-            .chart-grid { grid-template-columns: 1fr; }
-        }
-        @media (max-width: 420px) {
-            .scenario-btn-full { display: none; }
-            .scenario-btn-short { display: inline; }
-        }
+        @media (max-width: 768px) { .chart-grid { grid-template-columns: 1fr; } }
     </style>
     <link rel="stylesheet" href="../../assets/changelog.css">
 </head>
@@ -267,14 +110,14 @@
                 <div class="form-group" id="daily-n-group">
                     <label>
                         日均流量
-                        <span class="tooltip tip-down" data-tip="每天进入实验的用户总数。AB 测试中按分流比例分配给对照组与实验组。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="每天进入实验的用户总数。AB 测试中按分流比例分配给对照组与实验组。">ⓘ</span>
                     </label>
                     <input type="number" id="daily-n" min="1" step="1" placeholder="e.g. 10000">
                 </div>
                 <div class="form-group" id="split-group" style="display:none">
                     <label>
                         分流比例 (A : B)
-                        <span class="tooltip tip-down" data-tip="对照组与实验组的流量分配比例。1:1 表示等比例分流；1:2 表示实验组流量是对照组的两倍。非等比分流会降低统计效率，需要更多总样本量。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="对照组与实验组的流量分配比例。1:1 表示等比例分流；1:2 表示实验组流量是对照组的两倍。非等比分流会降低统计效率，需要更多总样本量。">ⓘ</span>
                     </label>
                     <select id="split-ratio">
                         <option value="1:1" selected>1 : 1</option>
@@ -289,35 +132,35 @@
                 <div class="form-group" id="daily-na-group" style="display:none">
                     <label>
                         A组日均流量（对照组）
-                        <span class="tooltip tip-down" data-tip="对照组每天进入实验的用户数量。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="对照组每天进入实验的用户数量。">ⓘ</span>
                     </label>
                     <input type="number" id="daily-na" min="1" step="1" placeholder="e.g. 5000">
                 </div>
                 <div class="form-group" id="daily-nb-group" style="display:none">
                     <label>
                         B组日均流量（实验组）
-                        <span class="tooltip tip-down" data-tip="实验组每天进入实验的用户数量。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="实验组每天进入实验的用户数量。">ⓘ</span>
                     </label>
                     <input type="number" id="daily-nb" min="1" step="1" placeholder="e.g. 5000">
                 </div>
                 <div class="form-group">
                     <label>
                         基准转化率 p₀ (%)
-                        <span class="tooltip tip-down" data-tip="当前历史转化率，作为计算基准。填写百分比数值，如 60 代表 60%。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="当前历史转化率，作为计算基准。填写百分比数值，如 60 代表 60%。">ⓘ</span>
                     </label>
                     <input type="number" id="p0" min="0.01" max="99.99" step="0.01" placeholder="e.g. 60">
                 </div>
                 <div class="form-group">
                     <label>
                         目标 MDE δ (%)
-                        <span class="tooltip tip-down" data-tip="期望检测到的最小效应量（绝对百分点）。用于绘制「功效 vs 天数」曲线。留空则仅显示 MDE 曲线。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="期望检测到的最小效应量（绝对百分点）。用于绘制「功效 vs 天数」曲线。留空则仅显示 MDE 曲线。">ⓘ</span>
                     </label>
                     <input type="number" id="delta" min="0.01" step="0.01" placeholder="可选，e.g. 5">
                 </div>
                 <div class="form-group">
                     <label>
                         显著性水平 α
-                        <span class="tooltip tip-down" data-tip="误报率上限：当实验实际无效时，仍得出「有效」结论的最大概率。α = 0.05 表示最多接受 5% 的误报风险。α 越小，结论越保守，所需样本量越大。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="误报率上限：当实验实际无效时，仍得出「有效」结论的最大概率。α = 0.05 表示最多接受 5% 的误报风险。α 越小，结论越保守，所需样本量越大。">ⓘ</span>
                     </label>
                     <select id="alpha">
                         <option value="0.05">0.05</option>
@@ -328,7 +171,7 @@
                 <div class="form-group">
                     <label>
                         目标功效
-                        <span class="tooltip tip-down" data-tip="MDE 曲线以此功效为计算标准；功效曲线中的参考线也取此值，交叉点即为「达标天数」。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="MDE 曲线以此功效为计算标准；功效曲线中的参考线也取此值，交叉点即为「达标天数」。">ⓘ</span>
                     </label>
                     <select id="target-power">
                         <option value="0.70" selected>70%</option>
@@ -339,7 +182,7 @@
                 <div class="form-group">
                     <label>
                         最多观测天数
-                        <span class="tooltip tip-down" data-tip="横轴最大天数，建议设为实验计划最长周期。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="横轴最大天数，建议设为实验计划最长周期。">ⓘ</span>
                     </label>
                     <input type="number" id="max-days" min="2" max="365" step="1" value="28">
                 </div>

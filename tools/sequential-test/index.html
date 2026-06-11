@@ -12,120 +12,9 @@
       gtag('config', 'G-VQV08H7W6V');
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/styles.css">
     <style>
-        :root {
-            --bg-primary: #0a0e14;
-            --bg-secondary: #141a22;
-            --bg-tertiary: #1c242e;
-            --bg-card: #151c25;
-            --border-color: #2a3441;
-            --text-primary: #e8eaed;
-            --text-secondary: #9ca3af;
-            --text-muted: #6b7280;
-            --accent-blue: #3b82f6;
-            --accent-cyan: #06b6d4;
-            --accent-green: #10b981;
-            --accent-orange: #f59e0b;
-            --accent-purple: #8b5cf6;
-            --accent-red: #ef4444;
-            --shadow: 0 4px 32px rgba(0,0,0,0.5);
-            --glow-blue: 0 0 20px rgba(59, 130, 246, 0.3);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary); color: var(--text-primary);
-            min-height: 100vh; line-height: 1.7;
-            background-image: radial-gradient(ellipse at 10% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
-                              radial-gradient(ellipse at 90% 80%, rgba(139,92,246,0.06) 0%, transparent 50%);
-        }
-        .container { max-width: 1100px; margin: 0 auto; padding: 48px 24px; }
-
-        .home-link {
-            position: fixed; top: 16px; right: 16px; z-index: 1000;
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 14px; border-radius: 12px;
-            background: var(--bg-secondary); border: 1px solid var(--border-color);
-            box-shadow: var(--shadow); color: var(--text-secondary);
-            font-size: 0.82rem; font-weight: 500; text-decoration: none;
-            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
-        }
-        .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
-
-        header { text-align: center; margin-bottom: 40px; padding-top: 8px; }
-        h1 {
-            font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
-            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .subtitle { color: var(--text-secondary); font-size: 1rem; }
-
-        .card {
-            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px;
-            padding: 32px; margin-bottom: 24px; position: relative;
-        }
-        .card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
-        }
-        .card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
-        .card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
-        .card-icon.blue { background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(6,182,212,0.2)); }
-        .card-icon.purple { background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.18)); }
-        .card-title { font-size: 1.15rem; font-weight: 600; }
-        .card-desc { font-size: 0.8rem; color: var(--text-secondary); margin-top: 3px; }
-
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .form-group { display: flex; flex-direction: column; gap: 8px; }
-        label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-
-        .tooltip { position: relative; cursor: help; color: var(--accent-cyan); display: inline-flex; }
-        .tooltip::after {
-            content: attr(data-tip); position: absolute;
-            bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-            background: var(--bg-primary); color: var(--text-primary);
-            padding: 12px 16px; border-radius: 10px; font-size: 0.75rem; font-weight: 400;
-            opacity: 0; visibility: hidden; transition: all 0.15s; z-index: 99999;
-            border: 1px solid var(--border-color); width: 260px;
-            white-space: normal; text-align: left; line-height: 1.6;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.6); pointer-events: none;
-        }
-        .tooltip:hover::after { opacity: 1; visibility: visible; }
-        .tooltip.tip-down::after { bottom: auto; top: calc(100% + 8px); }
-        .tooltip.tip-left::after { left: auto; right: 0; transform: none; }
-
-        input[type="number"], select {
-            background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px;
-            padding: 12px 16px; color: var(--text-primary); font-size: 0.95rem;
-            font-family: 'JetBrains Mono', monospace; width: 100%;
-        }
-        select { font-family: 'Noto Sans SC', sans-serif; cursor: pointer; }
-        input:focus, select:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-        input::placeholder { color: var(--text-muted); }
-
-        .btn {
-            padding: 14px 32px; border: none; border-radius: 12px; font-size: 0.95rem;
-            font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.25s;
-            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .btn-primary { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--glow-blue); }
-        .action-row { display: flex; gap: 14px; margin-top: 28px; justify-content: flex-end; }
-
-        .results-section { display: none; }
-        .results-section.visible { display: block; animation: fadeIn 0.3s ease; margin-top: 32px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Validation */
-        .validation-banner {
-            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35);
-            border-radius: 12px; padding: 14px 18px; margin-top: 20px;
-            font-size: 0.85rem; color: var(--accent-red); line-height: 1.6;
-        }
-        .validation-banner[hidden] { display: none; }
-        .field-error-msg { font-size: 0.75rem; color: var(--accent-red); margin-top: 4px; display: block; }
-        input.input-error, select.input-error { border-color: var(--accent-red) !important; box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.15) !important; }
-
+        h1 { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .stat-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 22px; }
         .stat-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -134,19 +23,13 @@
         .stat-value.good { color: var(--accent-green); }
         .stat-value.stop { color: var(--accent-red); }
         .stat-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 6px; }
-
         .chart-wrap { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
         .chart-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 4px; }
         .chart-subtitle { font-size: 0.75rem; color: var(--text-secondary); margin-bottom: 16px; }
         .chart-wrap svg { width: 100%; height: auto; display: block; }
-
         .table-wrap { margin-bottom: 24px; overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th {
-            background: var(--bg-secondary); color: var(--text-secondary); padding: 10px 14px;
-            text-align: left; font-weight: 600; font-size: 0.78rem; text-transform: uppercase;
-            letter-spacing: 0.04em; border-bottom: 1px solid var(--border-color);
-        }
+        th { background: var(--bg-secondary); color: var(--text-secondary); padding: 10px 14px; text-align: left; font-weight: 600; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border-color); }
         td { padding: 10px 14px; border-bottom: 1px solid rgba(42,52,65,0.6); font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; }
         tr:hover td { background: rgba(59,130,246,0.04); }
         .highlight-row td { background: rgba(59,130,246,0.08); }
@@ -154,25 +37,17 @@
         .cell-stop { color: var(--accent-red); font-weight: 600; }
         .cell-continue { color: var(--accent-green); }
         .cell-look { color: var(--text-muted); }
-
-        .decision-banner {
-            display: none; border-radius: 14px; padding: 20px 24px; margin-bottom: 24px;
-            display: flex; align-items: flex-start; gap: 14px;
-        }
+        .decision-banner { border-radius: 14px; padding: 20px 24px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 14px; }
         .decision-banner.stop { background: rgba(239,68,68,0.1); border: 1px solid rgba(239,68,68,0.3); }
         .decision-banner.continue { background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.3); }
         .decision-banner.hidden { display: none; }
         .decision-icon { font-size: 1.8rem; flex-shrink: 0; }
         .decision-title { font-size: 1rem; font-weight: 600; margin-bottom: 4px; }
         .decision-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.6; }
-
         .formula-section { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 24px; }
         .formula-label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; font-weight: 500; }
         .formula-text { font-size: 0.82rem; color: var(--text-secondary); line-height: 2; }
-
         .section-divider { border: none; border-top: 1px solid var(--border-color); margin: 28px 0; }
-
-        /* Guide styles */
         .info-card { border-color: rgba(139,92,246,0.2); }
         .guide-section p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; }
         .guide-title { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(139,92,246,0.2); }
@@ -185,18 +60,7 @@
         .guide-step { display: flex; gap: 14px; align-items: flex-start; }
         .step-num { width: 24px; height: 24px; border-radius: 50%; background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; font-size: 0.75rem; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
         .guide-step div { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.7; }
-
-        @media (max-width: 768px) {
-            .container { padding: 16px; padding-top: 56px; }
-            .home-link {
-                top: max(10px, env(safe-area-inset-top, 0px));
-                left: 12px; right: auto;
-                padding: 7px 11px;
-            }
-            .home-link-text { display: none; }
-            h1 { font-size: 1.8rem; }
-            .guide-grid { grid-template-columns: 1fr; }
-        }
+        @media (max-width: 768px) { h1 { font-size: 1.8rem; } .guide-grid { grid-template-columns: 1fr; } }
     </style>
     <link rel="stylesheet" href="../../assets/changelog.css">
 </head>
@@ -316,25 +180,25 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>计划总样本量 N
-                        <span class="tooltip tip-down" data-tip="实验计划收集的最大样本量（全组合计）。达到此量时进行最终分析。可使用样本量计算器估算。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="实验计划收集的最大样本量（全组合计）。达到此量时进行最终分析。可使用样本量计算器估算。">ⓘ</span>
                     </label>
                     <input type="number" id="total-n" min="1" step="1" placeholder="e.g. 10000">
                 </div>
                 <div class="form-group">
                     <label>日均流量
-                        <span class="tooltip tip-down" data-tip="每天进入实验的总用户数，用于将中期分析节点换算为天数。可选填，不影响边界计算。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="每天进入实验的总用户数，用于将中期分析节点换算为天数。可选填，不影响边界计算。">ⓘ</span>
                     </label>
                     <input type="number" id="daily-n" min="1" step="1" placeholder="可选，e.g. 1000">
                 </div>
                 <div class="form-group">
                     <label>中期分析次数 K
-                        <span class="tooltip tip-down" data-tip="实验期间计划进行的中期查看次数（含最终分析）。增加分析次数会使每次边界更宽松，但总体 I 类错误率维持在 α。通常 3–5 次。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="实验期间计划进行的中期查看次数（含最终分析）。增加分析次数会使每次边界更宽松，但总体 I 类错误率维持在 α。通常 3–5 次。">ⓘ</span>
                     </label>
                     <input type="number" id="k-looks" min="2" max="20" step="1" value="5">
                 </div>
                 <div class="form-group">
                     <label>显著性水平 α
-                        <span class="tooltip tip-down" data-tip="整个实验（含所有中期分析）的总 I 类错误率上限。α 消费函数会将这些 α 合理分配给各次分析，使总消耗不超过此值。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="整个实验（含所有中期分析）的总 I 类错误率上限。α 消费函数会将这些 α 合理分配给各次分析，使总消耗不超过此值。">ⓘ</span>
                     </label>
                     <select id="alpha">
                         <option value="0.05" selected>0.05</option>
@@ -345,7 +209,7 @@
                 </div>
                 <div class="form-group">
                     <label>边界类型
-                        <span class="tooltip tip-down" data-tip="O'Brien-Fleming：早期边界宽松（很难早停），后期收紧趋近正常 z 值。保守且检验力损失小，最常用。Pocock：各次边界相等（消费均匀）。早停机会更多，但最终分析边界高于正常值。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="O'Brien-Fleming：早期边界宽松（很难早停），后期收紧趋近正常 z 值。保守且检验力损失小，最常用。Pocock：各次边界相等（消费均匀）。早停机会更多，但最终分析边界高于正常值。">ⓘ</span>
                     </label>
                     <select id="boundary-type">
                         <option value="obf" selected>O'Brien-Fleming</option>
@@ -354,7 +218,7 @@
                 </div>
                 <div class="form-group">
                     <label>检验方向
-                        <span class="tooltip tip-down" data-tip="双侧：检测任意方向的差异（最常用）。单侧：只检测一个方向的改善（需有充分先验理由）。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="双侧：检测任意方向的差异（最常用）。单侧：只检测一个方向的改善（需有充分先验理由）。">ⓘ</span>
                     </label>
                     <select id="tail">
                         <option value="two" selected>双侧</option>
@@ -369,13 +233,13 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>当前已收集样本量 n
-                        <span class="tooltip tip-down" data-tip="截至本次中期分析，实验已累计收集的样本量。用于确定当前处于哪个信息分数节点。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="截至本次中期分析，实验已累计收集的样本量。用于确定当前处于哪个信息分数节点。">ⓘ</span>
                     </label>
                     <input type="number" id="current-n" min="1" step="1" placeholder="可选，e.g. 4000">
                 </div>
                 <div class="form-group">
                     <label>当前 z 统计量
-                        <span class="tooltip tip-down" data-tip="当前分析计算得到的 z 检验统计量（注意符号）。与对应节点的边界值比较，判断是否可以早停。">ⓘ</span>
+                        <span class="tooltip tip-bottom" data-tip="当前分析计算得到的 z 检验统计量（注意符号）。与对应节点的边界值比较，判断是否可以早停。">ⓘ</span>
                     </label>
                     <input type="number" id="current-z" step="0.001" placeholder="可选，e.g. 2.5">
                 </div>

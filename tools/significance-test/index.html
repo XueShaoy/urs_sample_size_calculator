@@ -13,245 +13,41 @@
       gtag('config', 'G-VQV08H7W6V');
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="../../assets/styles.css">
     <style>
-        :root {
-            --bg-primary: #0a0e14;
-            --bg-secondary: #141a22;
-            --bg-tertiary: #1c242e;
-            --bg-card: #151c25;
-            --border-color: #2a3441;
-            --text-primary: #e8eaed;
-            --text-secondary: #9ca3af;
-            --text-muted: #6b7280;
-            --accent-blue: #3b82f6;
-            --accent-cyan: #06b6d4;
-            --accent-green: #10b981;
-            --accent-orange: #f59e0b;
-            --accent-purple: #8b5cf6;
-            --accent-red: #ef4444;
-            --shadow: 0 4px 32px rgba(0,0,0,0.5);
-            --glow-blue: 0 0 20px rgba(59, 130, 246, 0.3);
-        }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--bg-primary); color: var(--text-primary);
-            min-height: 100vh; line-height: 1.7;
-            background-image: radial-gradient(ellipse at 10% 20%, rgba(59,130,246,0.08) 0%, transparent 50%),
-                              radial-gradient(ellipse at 90% 80%, rgba(139,92,246,0.06) 0%, transparent 50%);
-        }
-        .container { max-width: 1200px; margin: 0 auto; padding: 48px 24px; }
-
-        /* Floating nav — corner pills, no full-width bar */
-        .scenario-switch {
-            position: fixed; top: 16px; left: 16px; z-index: 1000;
-            display: flex; background: var(--bg-secondary); border-radius: 12px;
-            padding: 3px; border: 1px solid var(--border-color); box-shadow: var(--shadow);
-        }
-        .scenario-btn {
-            padding: 8px 14px; border: none; background: transparent;
-            color: var(--text-secondary); font-size: 0.82rem; font-family: inherit;
-            cursor: pointer; border-radius: 9px; transition: background 0.2s, color 0.2s;
-            display: flex; align-items: center; gap: 6px; font-weight: 500;
-            white-space: nowrap;
-        }
-        .scenario-btn-short { display: none; }
         .scenario-btn.active { background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; }
-        .scenario-btn:hover:not(.active) { background: var(--bg-tertiary); color: var(--text-primary); }
-
-        .home-link {
-            position: fixed; top: 16px; right: 16px; z-index: 1000;
-            display: inline-flex; align-items: center; gap: 6px;
-            padding: 8px 14px; border-radius: 12px;
-            background: var(--bg-secondary); border: 1px solid var(--border-color);
-            box-shadow: var(--shadow); color: var(--text-secondary);
-            font-size: 0.82rem; font-weight: 500; text-decoration: none;
-            transition: color 0.2s, border-color 0.2s, box-shadow 0.2s;
-        }
-        .home-link:hover { color: var(--text-primary); border-color: var(--accent-blue); box-shadow: var(--glow-blue); }
-
-        header { text-align: center; margin-bottom: 40px; padding-top: 8px; }
-        h1 {
-            font-size: 2.25rem; font-weight: 700; margin-bottom: 12px;
-            background: linear-gradient(135deg, var(--accent-cyan), var(--accent-blue), var(--accent-purple));
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-        }
-        .subtitle { color: var(--text-secondary); font-size: 1rem; }
-        .scenario-badge {
-            display: inline-flex; align-items: center; gap: 6px; padding: 6px 14px;
-            border-radius: 20px; font-size: 0.8rem; font-weight: 500; margin-top: 12px;
-            background: rgba(139,92,246,0.15); color: var(--accent-purple); border: 1px solid rgba(139,92,246,0.3);
-        }
-
-        /* Card */
-        .card {
-            background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 20px;
-            padding: 32px; margin-bottom: 24px; position: relative; overflow: visible;
-        }
-        .card::before {
-            content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(59,130,246,0.5), transparent);
-        }
-        .card-header { display: flex; align-items: center; gap: 14px; margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border-color); }
-        .card-icon { width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 1.3rem; }
-        .card-icon.blue { background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(6,182,212,0.2)); }
-        .card-icon.green { background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(6,182,212,0.2)); }
-        .card-icon.purple { background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(236,72,153,0.2)); }
-        .card-title { font-size: 1.15rem; font-weight: 600; }
-        .card-desc { font-size: 0.8rem; color: var(--text-secondary); margin-top: 3px; }
-
-        /* Form */
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
-        .form-group { display: flex; flex-direction: column; gap: 8px; position: relative; overflow: visible; }
-        label { font-size: 0.85rem; color: var(--text-secondary); font-weight: 500; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-
-        /* Tooltip */
-        .tooltip { position: relative; cursor: help; color: var(--accent-cyan); display: inline-flex; }
-        .tooltip::after {
-            content: attr(data-tip); position: absolute;
-            bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%);
-            background: var(--bg-primary); color: var(--text-primary);
-            padding: 12px 16px; border-radius: 10px; font-size: 0.75rem; font-weight: 400;
-            opacity: 0; visibility: hidden; transition: all 0.15s; z-index: 99999;
-            border: 1px solid var(--border-color); width: 240px;
-            white-space: normal; text-align: left; line-height: 1.6;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.6);
-            pointer-events: none;
-        }
-        .tooltip:hover::after { opacity: 1; visibility: visible; }
-        .tooltip.tip-left::after { left: auto; right: -8px; transform: none; }
-        .tooltip.tip-right::after { left: -8px; right: auto; transform: none; }
-        .tooltip.tip-down::after { bottom: auto; top: calc(100% + 8px); }
-
-        input[type="number"], input[type="text"], select {
-            background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px;
-            padding: 12px 16px; color: var(--text-primary); font-size: 0.95rem;
-            font-family: 'JetBrains Mono', monospace; width: 100%;
-        }
-        select { font-family: 'Noto Sans SC', sans-serif; cursor: pointer; }
-        input:focus, select:focus { outline: none; border-color: var(--accent-blue); box-shadow: 0 0 0 3px rgba(59,130,246,0.15); }
-        input::placeholder { color: var(--text-muted); }
-
-        /* Buttons */
-        .btn {
-            padding: 14px 32px; border: none; border-radius: 12px; font-size: 0.95rem;
-            font-family: inherit; font-weight: 600; cursor: pointer; transition: all 0.25s;
-            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-        }
-        .btn-primary { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple)); color: white; }
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: var(--glow-blue); }
-        .btn-secondary { background: var(--bg-tertiary); color: var(--text-secondary); border: 1px solid var(--border-color); }
-        .btn-secondary:hover { border-color: var(--accent-cyan); color: var(--accent-cyan); }
-        .btn-sm { padding: 9px 16px; font-size: 0.82rem; border-radius: 9px; }
-        .action-row { display: flex; gap: 14px; margin-top: 28px; justify-content: flex-end; flex-wrap: wrap; }
-
-        /* Data table (editable) */
+        .scenario-badge { background: rgba(139,92,246,0.15); color: var(--accent-purple); border: 1px solid rgba(139,92,246,0.3); }
         .data-toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
         .data-toolbar .spacer { flex: 1; }
         .table-scroll { overflow-x: auto; border: 1px solid var(--border-color); border-radius: 14px; }
         table.data-table { width: 100%; border-collapse: collapse; min-width: 560px; }
-        table.data-table th {
-            background: var(--bg-secondary); font-size: 0.72rem; color: var(--text-secondary);
-            text-transform: uppercase; letter-spacing: 0.04em; padding: 12px 12px; text-align: left;
-            border-bottom: 1px solid var(--border-color); white-space: nowrap;
-        }
+        table.data-table th { background: var(--bg-secondary); font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.04em; padding: 12px 12px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
         table.data-table td { padding: 8px 10px; border-bottom: 1px solid var(--border-color); }
         table.data-table tr:last-child td { border-bottom: none; }
         table.data-table input { padding: 9px 12px; border-radius: 8px; font-size: 0.88rem; }
         table.data-table input.metric-input { font-family: 'Noto Sans SC', sans-serif; }
-        .row-del {
-            background: rgba(239,68,68,0.12); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.25);
-            border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; line-height: 1;
-            display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s;
-        }
+        .row-del { background: rgba(239,68,68,0.12); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.25); border-radius: 8px; width: 32px; height: 32px; cursor: pointer; font-size: 1rem; line-height: 1; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .row-del:hover { background: rgba(239,68,68,0.25); }
-
-        /* Dropzone */
-        .dropzone {
-            margin-top: 18px; border: 1.5px dashed var(--border-color); border-radius: 14px;
-            padding: 26px; text-align: center; color: var(--text-secondary); font-size: 0.85rem;
-            background: var(--bg-secondary); transition: all 0.2s; cursor: pointer;
-        }
-        .dropzone:hover, .dropzone.dragover { border-color: var(--accent-cyan); color: var(--accent-cyan); background: rgba(6,182,212,0.06); }
-        .dropzone strong { color: var(--accent-cyan); }
-        .dropzone .dz-hint { display: block; margin-top: 8px; font-size: 0.75rem; color: var(--text-muted); }
-        .csv-status { margin-top: 12px; font-size: 0.8rem; }
-        .csv-status.ok { color: var(--accent-green); }
-        .csv-status.err { color: var(--accent-red); }
-
-        /* Info box */
-        .info-box { background: rgba(6,182,212,0.08); border: 1px solid rgba(6,182,212,0.2); border-radius: 12px; padding: 18px; margin-top: 20px; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.7; }
-        .info-box strong { color: var(--accent-cyan); }
-        .info-box code { font-family: 'JetBrains Mono', monospace; background: var(--bg-tertiary); padding: 2px 7px; border-radius: 6px; color: var(--accent-purple); font-size: 0.78rem; }
-
-        /* Results */
-        .results-section { display: none; }
-        .results-section.visible { display: block; animation: fadeIn 0.4s ease; margin-top: 32px; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
-
-        /* Validation */
-        .validation-banner {
-            background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.35);
-            border-radius: 12px; padding: 14px 18px; margin-top: 20px;
-            font-size: 0.85rem; color: var(--accent-red); line-height: 1.6;
-        }
-        .validation-banner[hidden] { display: none; }
-        .field-error-msg { font-size: 0.75rem; color: var(--accent-red); margin-top: 4px; display: block; }
-        input.input-error, select.input-error { border-color: var(--accent-red) !important; box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2) !important; }
-
+        .dropzone { margin-top: 18px; }
         .summary-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
         .summary-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px; text-align: center; }
         .summary-card .s-label { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 8px; }
         .summary-card .s-value { font-size: 1.8rem; font-weight: 700; font-family: 'JetBrains Mono', monospace; }
         .summary-card.sig { border-color: var(--accent-green); } .summary-card.sig .s-value { color: var(--accent-green); }
         .summary-card.nsig { border-color: var(--accent-orange); } .summary-card.nsig .s-value { color: var(--accent-orange); }
-
-        .section-title { font-size: 1rem; font-weight: 600; margin: 30px 0 18px; display: flex; align-items: center; gap: 10px; }
-        .section-title::before { content: ''; width: 4px; height: 20px; background: linear-gradient(180deg, var(--accent-blue), var(--accent-purple)); border-radius: 2px; }
-
-        .table-container { overflow-x: auto; }
-        .results-table { width: 100%; border-collapse: collapse; min-width: 720px; }
-        .results-table th, .results-table td { padding: 13px 14px; text-align: left; border-bottom: 1px solid var(--border-color); white-space: nowrap; }
-        .results-table th { background: var(--bg-secondary); font-size: 0.72rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.03em; }
-        .results-table td { font-family: 'JetBrains Mono', monospace; font-size: 0.88rem; }
+        .results-table { min-width: 720px; }
+        .results-table th { font-size: 0.72rem; letter-spacing: 0.03em; }
         .results-table td.metric-cell { font-family: 'Noto Sans SC', sans-serif; font-weight: 500; }
         .tag { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; font-family: 'Noto Sans SC', sans-serif; }
         .tag.sig-up { background: rgba(16,185,129,0.15); color: var(--accent-green); border: 1px solid rgba(16,185,129,0.3); }
         .tag.sig-down { background: rgba(239,68,68,0.15); color: var(--accent-red); border: 1px solid rgba(239,68,68,0.3); }
         .tag.ns { background: rgba(107,114,128,0.15); color: var(--text-muted); border: 1px solid rgba(107,114,128,0.3); }
-        .results-table td.success-cell { color: var(--accent-green); font-weight: 600; }
-        .results-table td.warning-cell { color: var(--accent-orange); font-weight: 600; }
-
-        /* Forest plot */
         .forest-wrap { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 16px; padding: 18px 12px; overflow-x: auto; }
         .forest-wrap svg { display: block; width: 100%; height: auto; min-width: 640px; }
         .forest-legend { display: flex; gap: 22px; flex-wrap: wrap; justify-content: center; margin-top: 14px; font-size: 0.78rem; color: var(--text-secondary); }
         .forest-legend .lg { display: inline-flex; align-items: center; gap: 7px; }
         .forest-legend .dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-
-        .formula-display { background: var(--bg-tertiary); border-radius: 12px; padding: 20px; margin-top: 24px; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: var(--text-secondary); line-height: 1.8; border: 1px solid var(--border-color); }
-        .formula-display strong { color: var(--accent-purple); }
-
-        @media (max-width: 768px) {
-            .container { padding: 16px; padding-top: 56px; }
-            .home-link {
-                top: max(10px, env(safe-area-inset-top, 0px));
-                left: 12px; right: auto;
-                padding: 7px 11px;
-            }
-            .home-link-text { display: none; }
-            .scenario-switch {
-                top: max(10px, env(safe-area-inset-top, 0px));
-                left: auto; right: 12px;
-            }
-            .scenario-btn { padding: 7px 10px; font-size: 0.78rem; }
-            .form-grid { grid-template-columns: 1fr; }
-            .summary-row { grid-template-columns: repeat(2, 1fr); }
-        }
-        @media (max-width: 420px) {
-            .scenario-btn-full { display: none; }
-            .scenario-btn-short { display: inline; }
-        }
+        @media (max-width: 768px) { .summary-row { grid-template-columns: repeat(2, 1fr); } }
     </style>
     <link rel="stylesheet" href="../../assets/changelog.css">
 </head>
@@ -877,9 +673,9 @@ function renderTable(results, alpha, tail) {
     const corrected = results.length && results[0].corrected;
     const adjHead = corrected ? '<th>校正后 p</th>' : '';
     const adjCell = r => corrected ? `<td>${fmtP(r.pAdj)}</td>` : '';
-    const pwHead = '<th>事后功效 <span class="tooltip tip-left tip-down" data-tip="observed power：以观测效应为真实效应，在当前样本量与 α 下检测到该效应的概率。⚠️ 注意：事后功效由 p 值唯一确定，不提供额外信息——p 值显著时功效必然高，反之必然低（Hoenig &amp; Heisey, 2001）。">ⓘ</span></th>';
+    const pwHead = '<th>事后功效 <span class="tooltip tip-left tip-bottom" data-tip="observed power：以观测效应为真实效应，在当前样本量与 α 下检测到该效应的概率。⚠️ 注意：事后功效由 p 值唯一确定，不提供额外信息——p 值显著时功效必然高，反之必然低（Hoenig &amp; Heisey, 2001）。">ⓘ</span></th>';
     const pwCell = r => `<td class="${powerCls(r.power)}">${fmtPower(r.power)}</td>`;
-    const orHead = '<th>OR <span class="tooltip tip-left tip-down" data-tip="比值比（Odds Ratio）：衡量两组事件发生的优势之比。单样本：OR = (p̂÷(1−p̂)) ÷ (p₀÷(1−p₀))；双样本：OR = (p₂÷(1−p₂)) ÷ (p₁÷(1−p₁))。OR=1 无差异，OR&gt;1 绿色（正向），OR&lt;1 橙色（负向）。p 较小时 OR≈RR；p 较大时 OR 会高估相对差异。">ⓘ</span></th>';
+    const orHead = '<th>OR <span class="tooltip tip-left tip-bottom" data-tip="比值比（Odds Ratio）：衡量两组事件发生的优势之比。单样本：OR = (p̂÷(1−p̂)) ÷ (p₀÷(1−p₀))；双样本：OR = (p₂÷(1−p₂)) ÷ (p₁÷(1−p₁))。OR=1 无差异，OR&gt;1 绿色（正向），OR&lt;1 橙色（负向）。p 较小时 OR≈RR；p 较大时 OR 会高估相对差异。">ⓘ</span></th>';
     const orCellSingle = r => { const or = calcOR(r.phat, r.p0); return `<td class="${orCls(or)}">${fmtOR(or)}</td>`; };
     const orCellTwo = r => { const or = calcOR(r.p2, r.p1); return `<td class="${orCls(or)}">${fmtOR(or)}</td>`; };
     if (testType === 'single') {
