@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="sl-theme-dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,8 +13,18 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../assets/styles.css">
+
+    <!-- Shoelace (web components) — autoloader registers only used components on demand -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/light.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/dark.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"></script>
+    <link rel="stylesheet" href="../../assets/shoelace-theme.css">
+
+    <!-- Alpine.js (reactive state) — defer so the DOM parses first -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
     <style>
         h1 { background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple), var(--accent-cyan)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .tip-icon { color: var(--accent-cyan); cursor: help; display: inline-flex; }
         .summary-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 24px; }
         .stat-card { background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 14px; padding: 20px 22px; }
         .stat-label { font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 6px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; }
@@ -48,7 +58,7 @@
         .formula-label { font-size: 0.78rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 10px; font-weight: 500; }
         .formula-text { font-size: 0.82rem; color: var(--text-secondary); line-height: 2; }
         .section-divider { border: none; border-top: 1px solid var(--border-color); margin: 28px 0; }
-        .info-card { border-color: rgba(139,92,246,0.2); }
+        sl-details.info-card::part(base) { border-color: rgba(139,92,246,0.2); }
         .guide-section p { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.7; }
         .guide-title { font-size: 0.88rem; font-weight: 600; color: var(--text-primary); margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid rgba(139,92,246,0.2); }
         .guide-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
@@ -64,7 +74,7 @@
     </style>
     <link rel="stylesheet" href="../../assets/changelog.css">
 </head>
-<body>
+<body x-data="seqTest()">
     <button class="watermark" id="changelog-watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026</button>
 
     <div class="changelog-overlay" id="changelog-overlay" onclick="closeChangelogOnOverlay(event)">
@@ -89,16 +99,14 @@
         </header>
 
         <!-- 工具说明 -->
-        <div class="card info-card">
-            <div class="card-header" style="margin-bottom:0;padding-bottom:0;border-bottom:none;cursor:pointer;" onclick="toggleGuide()">
+        <sl-details class="info-card">
+            <div slot="summary" style="display:flex;align-items:center;gap:14px;">
                 <div class="card-icon purple">📖</div>
-                <div style="flex:1;">
+                <div>
                     <div class="card-title">工具说明 · 什么时候用，怎么用</div>
                     <div class="card-desc">点击展开 / 收起</div>
                 </div>
-                <span id="guide-arrow" style="color:var(--text-muted);font-size:1.1rem;transition:transform 0.2s;">▼</span>
             </div>
-            <div id="guide-body" style="display:none;margin-top:24px;padding-top:20px;border-top:1px solid var(--border-color);">
 
                 <div class="guide-section">
                     <div class="guide-title">为什么需要序贯检验</div>
@@ -164,8 +172,7 @@
                     </div>
                 </div>
 
-            </div>
-        </div>
+        </sl-details>
 
         <!-- 参数设置 -->
         <div class="card">
@@ -180,28 +187,29 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>计划总样本量 N
-                        <span class="tooltip tip-bottom" data-tip="实验计划收集的最大样本量（全组合计）。达到此量时进行最终分析。可使用样本量计算器估算。">ⓘ</span>
+                        <sl-tooltip content="实验计划收集的最大样本量（全组合计）。达到此量时进行最终分析。可使用样本量计算器估算。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="total-n" min="1" step="1" placeholder="e.g. 10000">
+                    <input type="number" id="total-n" min="1" step="1" placeholder="e.g. 10000" x-model="totalN" :class="{ 'input-error': errors['total-n'] }" @input="errors['total-n'] = ''">
+                    <span class="field-error-msg" x-show="errors['total-n']" x-text="errors['total-n']" x-cloak></span>
                 </div>
                 <div class="form-group">
                     <label>日均流量
-                        <span class="tooltip tip-bottom" data-tip="每天进入实验的总用户数，用于将中期分析节点换算为天数。可选填，不影响边界计算。">ⓘ</span>
+                        <sl-tooltip content="每天进入实验的总用户数，用于将中期分析节点换算为天数。可选填，不影响边界计算。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="daily-n" min="1" step="1" placeholder="可选，e.g. 1000">
+                    <input type="number" id="daily-n" min="1" step="1" placeholder="可选，e.g. 1000" x-model="dailyN">
                 </div>
                 <div class="form-group">
                     <label>中期分析次数 K
-                        <span class="tooltip tip-bottom" data-tip="实验期间计划进行的中期查看次数（含最终分析）。增加分析次数会使每次边界更宽松，但总体 I 类错误率维持在 α。通常 3–5 次。">ⓘ</span>
+                        <sl-tooltip content="实验期间计划进行的中期查看次数（含最终分析）。增加分析次数会使每次边界更宽松，但总体 I 类错误率维持在 α。通常 3–5 次。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="k-looks" min="2" max="20" step="1" value="5">
+                    <input type="number" id="k-looks" min="2" max="20" step="1" x-model="kLooks">
                 </div>
                 <div class="form-group">
                     <label>显著性水平 α
-                        <span class="tooltip tip-bottom" data-tip="整个实验（含所有中期分析）的总 I 类错误率上限。α 消费函数会将这些 α 合理分配给各次分析，使总消耗不超过此值。">ⓘ</span>
+                        <sl-tooltip content="整个实验（含所有中期分析）的总 I 类错误率上限。α 消费函数会将这些 α 合理分配给各次分析，使总消耗不超过此值。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <select id="alpha">
-                        <option value="0.05" selected>0.05</option>
+                    <select id="alpha" x-model="alpha">
+                        <option value="0.05">0.05</option>
                         <option value="0.10">0.10</option>
                         <option value="0.20">0.20</option>
                         <option value="0.01">0.01</option>
@@ -209,19 +217,19 @@
                 </div>
                 <div class="form-group">
                     <label>边界类型
-                        <span class="tooltip tip-bottom" data-tip="O'Brien-Fleming：早期边界宽松（很难早停），后期收紧趋近正常 z 值。保守且检验力损失小，最常用。Pocock：各次边界相等（消费均匀）。早停机会更多，但最终分析边界高于正常值。">ⓘ</span>
+                        <sl-tooltip content="O'Brien-Fleming：早期边界宽松（很难早停），后期收紧趋近正常 z 值。保守且检验力损失小，最常用。Pocock：各次边界相等（消费均匀）。早停机会更多，但最终分析边界高于正常值。" style="--max-width: 280px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <select id="boundary-type">
-                        <option value="obf" selected>O'Brien-Fleming</option>
+                    <select id="boundary-type" x-model="boundaryType">
+                        <option value="obf">O'Brien-Fleming</option>
                         <option value="pocock">Pocock</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>检验方向
-                        <span class="tooltip tip-bottom" data-tip="双侧：检测任意方向的差异（最常用）。单侧：只检测一个方向的改善（需有充分先验理由）。">ⓘ</span>
+                        <sl-tooltip content="双侧：检测任意方向的差异（最常用）。单侧：只检测一个方向的改善（需有充分先验理由）。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <select id="tail">
-                        <option value="two" selected>双侧</option>
+                    <select id="tail" x-model="tail">
+                        <option value="two">双侧</option>
                         <option value="one">单侧</option>
                     </select>
                 </div>
@@ -233,70 +241,80 @@
             <div class="form-grid">
                 <div class="form-group">
                     <label>当前已收集样本量 n
-                        <span class="tooltip tip-bottom" data-tip="截至本次中期分析，实验已累计收集的样本量。用于确定当前处于哪个信息分数节点。">ⓘ</span>
+                        <sl-tooltip content="截至本次中期分析，实验已累计收集的样本量。用于确定当前处于哪个信息分数节点。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="current-n" min="1" step="1" placeholder="可选，e.g. 4000">
+                    <input type="number" id="current-n" min="1" step="1" placeholder="可选，e.g. 4000" x-model="currentN" :class="{ 'input-error': errors['current-n'] }" @input="errors['current-n'] = ''">
+                    <span class="field-error-msg" x-show="errors['current-n']" x-text="errors['current-n']" x-cloak></span>
                 </div>
                 <div class="form-group">
                     <label>当前 z 统计量
-                        <span class="tooltip tip-bottom" data-tip="当前分析计算得到的 z 检验统计量（注意符号）。与对应节点的边界值比较，判断是否可以早停。">ⓘ</span>
+                        <sl-tooltip content="当前分析计算得到的 z 检验统计量（注意符号）。与对应节点的边界值比较，判断是否可以早停。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="current-z" step="0.001" placeholder="可选，e.g. 2.5">
+                    <input type="number" id="current-z" step="0.001" placeholder="可选，e.g. 2.5" x-model="currentZ">
                 </div>
             </div>
 
             <div class="action-row">
-                <button class="btn btn-primary" onclick="compute()">计算停止边界</button>
+                <button class="btn btn-primary" @click="compute()">计算停止边界</button>
             </div>
         </div>
 
-        <div class="validation-banner" id="validation-banner" role="alert" aria-live="polite" hidden></div>
+        <div class="validation-banner" role="alert" aria-live="polite" x-show="errorList.length" x-cloak>
+            <template x-for="(msg, i) in errorList" :key="i"><div>⚠ <span x-text="msg"></span></div></template>
+        </div>
 
         <!-- 结果 -->
-        <div class="results-section" id="results">
+        <div class="results-section" id="results" :class="{ visible: hasResults }">
 
             <!-- 决策横幅 -->
-            <div class="decision-banner hidden" id="decision-banner">
-                <div class="decision-icon" id="decision-icon"></div>
-                <div>
-                    <div class="decision-title" id="decision-title"></div>
-                    <div class="decision-desc" id="decision-desc"></div>
-                </div>
-            </div>
+            <sl-alert :variant="decision === 'stop' ? 'danger' : 'success'" :open="!!decision" style="margin-bottom:24px;">
+                <span slot="icon" x-text="decision === 'stop' ? '🛑' : '▶️'" style="font-size:1.4rem;"></span>
+                <div class="decision-title" x-text="decisionTitle"></div>
+                <div class="decision-desc" x-text="decisionDesc"></div>
+            </sl-alert>
 
             <!-- 摘要卡片 -->
-            <div class="summary-grid" id="summary-grid"></div>
+            <div class="summary-grid">
+                <template x-for="card in summaryCards" :key="card.label">
+                    <div class="stat-card">
+                        <div class="stat-label" x-text="card.label"></div>
+                        <div class="stat-value" :class="card.cls" x-text="card.value"></div>
+                        <div class="stat-note" x-text="card.note"></div>
+                    </div>
+                </template>
+            </div>
 
             <!-- 边界图 -->
             <div class="chart-wrap">
                 <div class="chart-title">停止边界 vs 中期分析节点</div>
-                <div class="chart-subtitle" id="chart-subtitle"></div>
-                <svg id="boundary-chart" viewBox="0 0 560 260" style="overflow:visible;"></svg>
+                <div class="chart-subtitle" x-text="chartSubtitle"></div>
+                <svg x-ref="chart" viewBox="0 0 560 260" style="overflow:visible;"></svg>
             </div>
 
             <!-- 边界明细表 -->
             <div class="table-wrap">
                 <table>
-                    <thead id="boundary-thead"></thead>
-                    <tbody id="boundary-tbody"></tbody>
+                    <thead x-ref="thead"></thead>
+                    <tbody x-ref="tbody"></tbody>
                 </table>
             </div>
 
             <!-- 公式说明 -->
             <div class="formula-section">
                 <div class="formula-label">方法说明</div>
-                <div class="formula-text" id="formula-text"></div>
+                <div class="formula-text" x-ref="formula"></div>
             </div>
 
             <!-- 结果解读 -->
             <div class="formula-section" style="margin-top:16px;background:rgba(139,92,246,0.06);border-color:rgba(139,92,246,0.2);">
                 <div class="formula-label" style="color:var(--accent-purple);">结果解读指南</div>
-                <div class="formula-text" id="interp-text"></div>
+                <div class="formula-text" x-ref="interp"></div>
             </div>
         </div>
     </div>
 
 <script>
+// ---- Pure statistical core (no DOM) ----
 function erf(x) {
     const sign = x < 0 ? -1 : 1;
     x = Math.abs(x);
@@ -356,249 +374,15 @@ function computeBoundaries(alpha, K, spendFn, tail) {
     return looks;
 }
 
-function clearFieldError(input) {
-    if (!input) return;
-    input.classList.remove('input-error');
-    input.removeAttribute('aria-invalid');
-    const group = input.closest('.form-group') || input.parentElement;
-    group?.querySelector('.field-error-msg')?.remove();
-}
-
-function clearValidation() {
-    document.querySelectorAll('.input-error').forEach(clearFieldError);
-    const banner = document.getElementById('validation-banner');
-    if (banner) { banner.hidden = true; banner.innerHTML = ''; }
-}
-
-function setFieldError(inputId, message) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
-    input.classList.add('input-error');
-    input.setAttribute('aria-invalid', 'true');
-    const group = input.closest('.form-group') || input.parentElement;
-    if (!group) return;
-    let msg = group.querySelector('.field-error-msg');
-    if (!msg) {
-        msg = document.createElement('span');
-        msg.className = 'field-error-msg';
-        msg.setAttribute('role', 'alert');
-        group.appendChild(msg);
-    }
-    msg.textContent = message;
-}
-
-function showValidationErrors(errors) {
-    clearValidation();
-    const unique = [];
-    const seen = new Set();
-    for (const err of errors) {
-        const key = `${err.id || ''}:${err.message}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        unique.push(err);
-    }
-    let firstFocus = null;
-    for (const err of unique) {
-        if (err.id) {
-            setFieldError(err.id, err.message);
-            if (!firstFocus) firstFocus = document.getElementById(err.id);
-        }
-    }
-    const banner = document.getElementById('validation-banner');
-    if (banner) {
-        banner.hidden = false;
-        banner.innerHTML = unique.map(e => `<div>⚠ ${e.message}</div>`).join('');
-    }
-    document.getElementById('results').classList.remove('visible');
-    const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
-    const target = firstFocus || banner;
-    if (firstFocus) firstFocus.focus({ preventScroll: true });
-    target?.scrollIntoView({ behavior: scrollBehavior, block: 'center' });
-    return false;
-}
-
-function compute() {
-    clearValidation();
-    const N = parseInt(document.getElementById('total-n').value) || 0;
-    const dailyN = parseFloat(document.getElementById('daily-n').value) || 0;
-    const K = Math.min(20, Math.max(2, parseInt(document.getElementById('k-looks').value) || 5));
-    const alpha = parseFloat(document.getElementById('alpha').value) || 0.05;
-    const bType = document.getElementById('boundary-type').value;
-    const tail = document.getElementById('tail').value;
-    const currentN = parseFloat(document.getElementById('current-n').value) || 0;
-    const currentZ = parseFloat(document.getElementById('current-z').value);
-    const hasCurrentZ = document.getElementById('current-z').value.trim() !== '';
-    const hasCurrentN = document.getElementById('current-n').value.trim() !== '';
-
-    const errors = [];
-    if (N <= 0) errors.push({ id: 'total-n', message: '请输入计划总样本量 N' });
-    if (hasCurrentZ && !(currentN > 0)) errors.push({ id: 'current-n', message: '填写「当前 z 统计量」时需同时填写当前累计样本量 n' });
-    if (hasCurrentN && currentN > 0 && N > 0 && currentN > N) errors.push({ id: 'current-n', message: '当前样本量不应超过计划总样本量 N' });
-    if (errors.length) return showValidationErrors(errors);
-
-    const spendFn = bType === 'obf' ? (a, t) => spendOBF(a, t) : (a, t) => spendPocock(a, t);
-    const looks = computeBoundaries(alpha, K, spendFn, tail);
-
-    // Determine current look
-    let currentLook = null;
-    if (currentN > 0 && N > 0) {
-        const t = Math.min(currentN / N, 1);
-        let bestIdx = 0;
-        for (let i = 0; i < looks.length; i++) {
-            if (Math.abs(looks[i].t - t) < Math.abs(looks[bestIdx].t - t)) bestIdx = i;
-        }
-        currentLook = looks[bestIdx];
-    }
-
-    const boundary = currentLook ? currentLook.z : looks[K-1].z;
-
-    // Decision
-    let decision = null;
-    if (hasCurrentZ && currentLook) {
-        const absZ = Math.abs(currentZ);
-        decision = absZ >= boundary ? 'stop' : 'continue';
-    }
-
-    // Summary cards
-    const finalZ = looks[K-1].z;
-    const firstZ = looks[0].z;
-    const summaryEl = document.getElementById('summary-grid');
-    const sides = tail === 'two' ? 2 : 1;
-    summaryEl.innerHTML = `
-        <div class="stat-card">
-            <div class="stat-label">最终分析边界 (z)</div>
-            <div class="stat-value good">${finalZ.toFixed(3)}</div>
-            <div class="stat-note">第 ${K} 次分析（t=1），对应 p<${(sides*(1-normCDF(finalZ))).toFixed(4)}</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">首次分析边界 (z)</div>
-            <div class="stat-value warn">${firstZ.toFixed(3)}</div>
-            <div class="stat-note">第 1 次分析（t=${(1/K).toFixed(2)}），需超过此值才能早停</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-label">每次节点样本量</div>
-            <div class="stat-value">${Math.round(N/K).toLocaleString()}</div>
-            <div class="stat-note">总量 ${N.toLocaleString()} / ${K} 次分析${dailyN > 0 ? '，约 ' + Math.round(N/K/dailyN) + ' 天/次' : ''}</div>
-        </div>
-        ${hasCurrentZ && currentLook ? `<div class="stat-card">
-            <div class="stat-label">当前决策</div>
-            <div class="stat-value ${decision === 'stop' ? 'stop' : 'good'}">${decision === 'stop' ? '停止' : '继续'}</div>
-            <div class="stat-note">|z|=${Math.abs(currentZ).toFixed(3)} ${decision === 'stop' ? '≥' : '<'} 边界 ${boundary.toFixed(3)}</div>
-        </div>` : ''}
-    `;
-
-    // Decision banner
-    const bannerEl = document.getElementById('decision-banner');
-    if (hasCurrentZ && currentLook && decision) {
-        bannerEl.className = `decision-banner ${decision}`;
-        document.getElementById('decision-icon').textContent = decision === 'stop' ? '🛑' : '▶️';
-        document.getElementById('decision-title').textContent = decision === 'stop'
-            ? `建议停止实验（第 ${currentLook.k} 次中期分析）`
-            : `继续实验（第 ${currentLook.k} 次中期分析）`;
-        document.getElementById('decision-desc').innerHTML = decision === 'stop'
-            ? `当前 |z| = ${Math.abs(currentZ).toFixed(3)} 已超过本次分析边界 ${boundary.toFixed(3)}（累计消费 α = ${(currentLook.cumSpent*100).toFixed(3)}%），可按预设规则宣告显著并停止实验。`
-            : `当前 |z| = ${Math.abs(currentZ).toFixed(3)} 未超过本次分析边界 ${boundary.toFixed(3)}，尚无充分证据停止实验，继续观测至下一节点（第 ${Math.min(currentLook.k+1, K)} 次分析，n ≈ ${Math.round(N*(Math.min(currentLook.k+1,K))/K).toLocaleString()}）。`;
-    } else {
-        bannerEl.className = 'decision-banner hidden';
-    }
-
-    // Chart
-    renderBoundaryChart(looks, currentLook, hasCurrentZ ? currentZ : null, tail, N, dailyN);
-
-    // Chart subtitle
-    document.getElementById('chart-subtitle').textContent =
-        `${bType === 'obf' ? 'O\'Brien-Fleming' : 'Pocock'} · ${tail === 'two' ? '双侧' : '单侧'} · α=${alpha} · K=${K} 次分析`;
-
-    // Table
-    const hasDays = dailyN > 0;
-    const theadEl = document.getElementById('boundary-thead');
-    const tbodyEl = document.getElementById('boundary-tbody');
-    theadEl.innerHTML = `<tr>
-        <th>分析节点</th>
-        <th>信息分数 t</th>
-        <th>累计样本量</th>
-        ${hasDays ? '<th>约第N天</th>' : ''}
-        <th>消费 α (累计)</th>
-        <th>本次 Δα</th>
-        <th>边界 |z|</th>
-        <th>对应 p 值</th>
-        ${hasCurrentZ && currentLook ? '<th>当前状态</th>' : ''}
-    </tr>`;
-
-    const sides2 = tail === 'two' ? 2 : 1;
-    tbodyEl.innerHTML = looks.map(lk => {
-        const n = Math.round(lk.t * N);
-        const days = hasDays ? Math.round(n / dailyN) : null;
-        const isCurrent = currentLook && lk.k === currentLook.k;
-        const pBoundary = sides2 * (1 - normCDF(lk.z));
-        let statusCell = '';
-        let rowClass = '';
-        if (hasCurrentZ && currentLook) {
-            if (isCurrent) {
-                const absZ = Math.abs(currentZ);
-                const dec = absZ >= lk.z ? 'stop' : 'continue';
-                statusCell = `<td class="${dec === 'stop' ? 'cell-stop' : 'cell-continue'}">${dec === 'stop' ? '🛑 超过边界' : '▶ 未超过边界'}</td>`;
-                rowClass = dec === 'stop' ? 'stop-row' : 'highlight-row';
-            } else {
-                statusCell = `<td class="cell-look">—</td>`;
-            }
-        }
-        return `<tr class="${rowClass}">
-            <td>第 ${lk.k} 次${lk.k === K ? ' (终)' : ''}</td>
-            <td>${lk.t.toFixed(3)}</td>
-            <td>${n.toLocaleString()}</td>
-            ${hasDays ? `<td>${days}</td>` : ''}
-            <td>${(lk.cumSpent*100).toFixed(4)}%</td>
-            <td>${(lk.deltaAlpha*100).toFixed(4)}%</td>
-            <td><strong>${lk.z.toFixed(3)}</strong></td>
-            <td>${pBoundary.toFixed(5)}</td>
-            ${hasCurrentZ && currentLook ? statusCell : ''}
-        </tr>`;
-    }).join('');
-
-    // Formula
-    const bName = bType === 'obf' ? 'O\'Brien-Fleming' : 'Pocock';
-    const bFormula = bType === 'obf'
-        ? `α*(t) = 2 × [1 − Φ(z<sub>α/2</sub> / √t)]，其中 z<sub>α/2</sub> = ${normInv(1-alpha/2).toFixed(3)}`
-        : `α*(t) = α × ln(1 + (e−1) × t)，其中 α = ${alpha}`;
-    document.getElementById('formula-text').innerHTML = `
-        <strong>方法：${bName} α 消费函数（Lan-DeMets, 1983）</strong><br>
-        <strong>消费函数：</strong>${bFormula}<br>
-        <strong>边界计算：</strong>第 k 次分析（t = k/K）消费 Δα<sub>k</sub> = α*(t<sub>k</sub>) − α*(t<sub>k−1</sub>)；边界 z<sub>k</sub> = Φ<sup>−1</sup>(1 − Δα<sub>k</sub>/${tail === 'two' ? '2' : '1'})<br>
-        <strong>核心性质：</strong>所有中期分析与最终分析的总 I 类错误率 ≤ α（${(alpha*100).toFixed(0)}%），无论在哪次分析停止。<br>
-        <strong>使用前提：</strong>停止规则须在实验开始前预先注册（prospective）；中途追加分析节点会使保证失效。<br>
-        <strong>与固定样本量的差异：</strong>${bType === 'obf' ? 'O\'Brien-Fleming 最终分析边界接近（略高于）固定样本量检验，检验力损失极小（&lt;1%）。' : 'Pocock 各次分析边界相等，最终分析边界高于固定样本量检验（更保守），需增加总样本量约 10-30% 以补偿。'}
-    `;
-
-    const finalBoundary = looks[K-1].z;
-    const finalP = (sides2 * (1 - normCDF(finalBoundary))).toFixed(5);
-    document.getElementById('interp-text').innerHTML = `
-        <strong>如何读边界表</strong><br>
-        每行对应一次计划中的分析节点。<strong>边界 |z|</strong> 是该节点的临界值：若当次 z 检验统计量的绝对值 ≥ 该值，则达到早停条件。<strong>本次 Δα</strong> 是本节点消耗的误报率预算；<strong>累计消费 α</strong> 是截至本节点已消耗的总预算。<br><br>
-        <strong>如何读边界图</strong><br>
-        蓝色折线是各节点的停止边界，向右（信息积累）通常逐步降低。灰色虚线是固定样本量的参考临界值（z=${normInv(1-alpha/sides2).toFixed(2)}，p=${alpha}）${bType === 'obf' ? '；O\'Brien-Fleming 最终边界接近此线' : '；Pocock 各节点边界均相等且高于此线'}。${hasCurrentZ ? '橙色点是当前节点；水平虚线是当前 |z| 值。' : '填写当前 z 统计量后，图中会显示当前位置与边界的对比。'}<br><br>
-        <strong>停止与继续的决策逻辑</strong><br>
-        • <span style="color:var(--accent-red)">🛑 超过边界</span>：|z| ≥ 当前节点边界 → 结果显著，可按预设规则宣告有效并停止实验。此时整体 I 类错误率仍 ≤ α。<br>
-        • <span style="color:var(--accent-green)">▶ 未超过边界</span>：|z| &lt; 当前节点边界 → 证据不足，继续实验，等待下一节点。<br>
-        • <strong>走到最终分析（第 ${K} 次）</strong>：若所有中期节点均未超过边界，在最终分析使用最终边界（|z| ≥ ${finalBoundary.toFixed(3)}，即 p ≤ ${finalP}）做结论。<br><br>
-        <strong>注意事项</strong><br>
-        • <strong>不得追加节点</strong>：实验开始后不能临时增加查看次数，否则消费函数的保证失效。<br>
-        • <strong>不得回溯适用</strong>：序贯边界必须在实验开始前注册，不能在看到数据后才选择此方法。<br>
-        • <strong>效应量报告</strong>：早停时样本量较小，效应量估计偏高（赢者诅咒）；在报告结果时注意说明这一局限性。
-    `;
-
-    document.getElementById('results').classList.add('visible');
-    trackEvent('compute');
-}
-
-function renderBoundaryChart(looks, currentLook, currentZ, tail, N, dailyN) {
+// ---- SVG chart renderer (writes into the provided <svg> element) ----
+function renderBoundaryChart(looks, currentLook, currentZ, tail, N, dailyN, alpha, svgEl) {
     const W = 560, H = 260, ml = 54, mr = 20, mt = 14, mb = 44;
     const pw = W - ml - mr, ph = H - mt - mb;
     const K = looks.length;
 
     const allZ = looks.map(l => l.z);
     const sides = tail === 'two' ? 2 : 1;
-    const fixedZ = normInv(1 - (parseFloat(document.getElementById('alpha').value) || 0.05) / sides);
+    const fixedZ = normInv(1 - (alpha || 0.05) / sides);
 
     const maxZ = Math.max(...allZ, fixedZ, currentZ != null ? Math.abs(currentZ) : 0) * 1.15 + 0.3;
     const minZ = 0;
@@ -664,7 +448,7 @@ function renderBoundaryChart(looks, currentLook, currentZ, tail, N, dailyN) {
     // Y axis label
     svg += `<text x="12" y="${mt+ph/2}" text-anchor="middle" fill="#9ca3af" font-size="11" transform="rotate(-90,12,${mt+ph/2})">边界 |z|</text>`;
 
-    document.getElementById('boundary-chart').innerHTML = svg;
+    svgEl.innerHTML = svg;
 }
 
 function trackEvent(action) {
@@ -673,12 +457,182 @@ function trackEvent(action) {
     }
 }
 
-function toggleGuide() {
-    const body = document.getElementById('guide-body');
-    const arrow = document.getElementById('guide-arrow');
-    const open = body.style.display !== 'none';
-    body.style.display = open ? 'none' : 'block';
-    arrow.style.transform = open ? '' : 'rotate(180deg)';
+// ---- Alpine component: reactive state + compute orchestration ----
+function seqTest() {
+    return {
+        // form inputs
+        totalN: '', dailyN: '', kLooks: '5', alpha: '0.05',
+        boundaryType: 'obf', tail: 'two', currentN: '', currentZ: '',
+        // ui state
+        errors: {}, errorList: [], hasResults: false,
+        decision: null, decisionTitle: '', decisionDesc: '',
+        summaryCards: [], chartSubtitle: '',
+
+        compute() {
+            const N = parseInt(this.totalN) || 0;
+            const dailyN = parseFloat(this.dailyN) || 0;
+            const K = Math.min(20, Math.max(2, parseInt(this.kLooks) || 5));
+            const alpha = parseFloat(this.alpha) || 0.05;
+            const bType = this.boundaryType;
+            const tail = this.tail;
+            const currentN = parseFloat(this.currentN) || 0;
+            const currentZ = parseFloat(this.currentZ);
+            const hasCurrentZ = String(this.currentZ).trim() !== '';
+            const hasCurrentN = String(this.currentN).trim() !== '';
+
+            // Validation
+            const errs = {}, list = [];
+            const addErr = (id, message) => { if (!errs[id]) { errs[id] = message; list.push(message); } };
+            if (N <= 0) addErr('total-n', '请输入计划总样本量 N');
+            if (hasCurrentZ && !(currentN > 0)) addErr('current-n', '填写「当前 z 统计量」时需同时填写当前累计样本量 n');
+            if (hasCurrentN && currentN > 0 && N > 0 && currentN > N) addErr('current-n', '当前样本量不应超过计划总样本量 N');
+            if (list.length) {
+                this.errors = errs;
+                this.errorList = list;
+                this.hasResults = false;
+                this.$nextTick(() => {
+                    const el = document.getElementById(Object.keys(errs)[0]);
+                    const behavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+                    if (el) { el.focus({ preventScroll: true }); el.scrollIntoView({ behavior, block: 'center' }); }
+                });
+                return;
+            }
+            this.errors = {};
+            this.errorList = [];
+
+            const sides = tail === 'two' ? 2 : 1;
+            const spendFn = bType === 'obf' ? (a, t) => spendOBF(a, t) : (a, t) => spendPocock(a, t);
+            const looks = computeBoundaries(alpha, K, spendFn, tail);
+
+            // Determine current look
+            let currentLook = null;
+            if (currentN > 0 && N > 0) {
+                const t = Math.min(currentN / N, 1);
+                let bestIdx = 0;
+                for (let i = 0; i < looks.length; i++) {
+                    if (Math.abs(looks[i].t - t) < Math.abs(looks[bestIdx].t - t)) bestIdx = i;
+                }
+                currentLook = looks[bestIdx];
+            }
+            const boundary = currentLook ? currentLook.z : looks[K-1].z;
+
+            // Decision
+            let decision = null;
+            if (hasCurrentZ && currentLook) {
+                decision = Math.abs(currentZ) >= boundary ? 'stop' : 'continue';
+            }
+
+            // Summary cards (declarative)
+            const finalZ = looks[K-1].z;
+            const firstZ = looks[0].z;
+            const cards = [
+                { label: '最终分析边界 (z)', value: finalZ.toFixed(3), cls: 'good',
+                  note: `第 ${K} 次分析（t=1），对应 p<${(sides*(1-normCDF(finalZ))).toFixed(4)}` },
+                { label: '首次分析边界 (z)', value: firstZ.toFixed(3), cls: 'warn',
+                  note: `第 1 次分析（t=${(1/K).toFixed(2)}），需超过此值才能早停` },
+                { label: '每次节点样本量', value: Math.round(N/K).toLocaleString(), cls: '',
+                  note: `总量 ${N.toLocaleString()} / ${K} 次分析${dailyN > 0 ? '，约 ' + Math.round(N/K/dailyN) + ' 天/次' : ''}` },
+            ];
+            if (hasCurrentZ && currentLook) {
+                cards.push({ label: '当前决策', value: decision === 'stop' ? '停止' : '继续',
+                    cls: decision === 'stop' ? 'stop' : 'good',
+                    note: `|z|=${Math.abs(currentZ).toFixed(3)} ${decision === 'stop' ? '≥' : '<'} 边界 ${boundary.toFixed(3)}` });
+            }
+            this.summaryCards = cards;
+
+            // Decision banner
+            if (hasCurrentZ && currentLook && decision) {
+                this.decision = decision;
+                this.decisionTitle = decision === 'stop'
+                    ? `建议停止实验（第 ${currentLook.k} 次中期分析）`
+                    : `继续实验（第 ${currentLook.k} 次中期分析）`;
+                this.decisionDesc = decision === 'stop'
+                    ? `当前 |z| = ${Math.abs(currentZ).toFixed(3)} 已超过本次分析边界 ${boundary.toFixed(3)}（累计消费 α = ${(currentLook.cumSpent*100).toFixed(3)}%），可按预设规则宣告显著并停止实验。`
+                    : `当前 |z| = ${Math.abs(currentZ).toFixed(3)} 未超过本次分析边界 ${boundary.toFixed(3)}，尚无充分证据停止实验，继续观测至下一节点（第 ${Math.min(currentLook.k+1, K)} 次分析，n ≈ ${Math.round(N*(Math.min(currentLook.k+1,K))/K).toLocaleString()}）。`;
+            } else {
+                this.decision = null;
+            }
+
+            // Chart
+            renderBoundaryChart(looks, currentLook, hasCurrentZ ? currentZ : null, tail, N, dailyN, alpha, this.$refs.chart);
+            this.chartSubtitle = `${bType === 'obf' ? 'O\'Brien-Fleming' : 'Pocock'} · ${tail === 'two' ? '双侧' : '单侧'} · α=${alpha} · K=${K} 次分析`;
+
+            // Table
+            const hasDays = dailyN > 0;
+            this.$refs.thead.innerHTML = `<tr>
+                <th>分析节点</th>
+                <th>信息分数 t</th>
+                <th>累计样本量</th>
+                ${hasDays ? '<th>约第N天</th>' : ''}
+                <th>消费 α (累计)</th>
+                <th>本次 Δα</th>
+                <th>边界 |z|</th>
+                <th>对应 p 值</th>
+                ${hasCurrentZ && currentLook ? '<th>当前状态</th>' : ''}
+            </tr>`;
+            this.$refs.tbody.innerHTML = looks.map(lk => {
+                const n = Math.round(lk.t * N);
+                const days = hasDays ? Math.round(n / dailyN) : null;
+                const isCurrent = currentLook && lk.k === currentLook.k;
+                const pBoundary = sides * (1 - normCDF(lk.z));
+                let statusCell = '', rowClass = '';
+                if (hasCurrentZ && currentLook) {
+                    if (isCurrent) {
+                        const dec = Math.abs(currentZ) >= lk.z ? 'stop' : 'continue';
+                        statusCell = `<td class="${dec === 'stop' ? 'cell-stop' : 'cell-continue'}">${dec === 'stop' ? '🛑 超过边界' : '▶ 未超过边界'}</td>`;
+                        rowClass = dec === 'stop' ? 'stop-row' : 'highlight-row';
+                    } else {
+                        statusCell = `<td class="cell-look">—</td>`;
+                    }
+                }
+                return `<tr class="${rowClass}">
+                    <td>第 ${lk.k} 次${lk.k === K ? ' (终)' : ''}</td>
+                    <td>${lk.t.toFixed(3)}</td>
+                    <td>${n.toLocaleString()}</td>
+                    ${hasDays ? `<td>${days}</td>` : ''}
+                    <td>${(lk.cumSpent*100).toFixed(4)}%</td>
+                    <td>${(lk.deltaAlpha*100).toFixed(4)}%</td>
+                    <td><strong>${lk.z.toFixed(3)}</strong></td>
+                    <td>${pBoundary.toFixed(5)}</td>
+                    ${hasCurrentZ && currentLook ? statusCell : ''}
+                </tr>`;
+            }).join('');
+
+            // Formula
+            const bName = bType === 'obf' ? 'O\'Brien-Fleming' : 'Pocock';
+            const bFormula = bType === 'obf'
+                ? `α*(t) = 2 × [1 − Φ(z<sub>α/2</sub> / √t)]，其中 z<sub>α/2</sub> = ${normInv(1-alpha/2).toFixed(3)}`
+                : `α*(t) = α × ln(1 + (e−1) × t)，其中 α = ${alpha}`;
+            this.$refs.formula.innerHTML = `
+                <strong>方法：${bName} α 消费函数（Lan-DeMets, 1983）</strong><br>
+                <strong>消费函数：</strong>${bFormula}<br>
+                <strong>边界计算：</strong>第 k 次分析（t = k/K）消费 Δα<sub>k</sub> = α*(t<sub>k</sub>) − α*(t<sub>k−1</sub>)；边界 z<sub>k</sub> = Φ<sup>−1</sup>(1 − Δα<sub>k</sub>/${tail === 'two' ? '2' : '1'})<br>
+                <strong>核心性质：</strong>所有中期分析与最终分析的总 I 类错误率 ≤ α（${(alpha*100).toFixed(0)}%），无论在哪次分析停止。<br>
+                <strong>使用前提：</strong>停止规则须在实验开始前预先注册（prospective）；中途追加分析节点会使保证失效。<br>
+                <strong>与固定样本量的差异：</strong>${bType === 'obf' ? 'O\'Brien-Fleming 最终分析边界接近（略高于）固定样本量检验，检验力损失极小（&lt;1%）。' : 'Pocock 各次分析边界相等，最终分析边界高于固定样本量检验（更保守），需增加总样本量约 10-30% 以补偿。'}
+            `;
+
+            const finalBoundary = looks[K-1].z;
+            const finalP = (sides * (1 - normCDF(finalBoundary))).toFixed(5);
+            this.$refs.interp.innerHTML = `
+                <strong>如何读边界表</strong><br>
+                每行对应一次计划中的分析节点。<strong>边界 |z|</strong> 是该节点的临界值：若当次 z 检验统计量的绝对值 ≥ 该值，则达到早停条件。<strong>本次 Δα</strong> 是本节点消耗的误报率预算；<strong>累计消费 α</strong> 是截至本节点已消耗的总预算。<br><br>
+                <strong>如何读边界图</strong><br>
+                蓝色折线是各节点的停止边界，向右（信息积累）通常逐步降低。灰色虚线是固定样本量的参考临界值（z=${normInv(1-alpha/sides).toFixed(2)}，p=${alpha}）${bType === 'obf' ? '；O\'Brien-Fleming 最终边界接近此线' : '；Pocock 各节点边界均相等且高于此线'}。${hasCurrentZ ? '橙色点是当前节点；水平虚线是当前 |z| 值。' : '填写当前 z 统计量后，图中会显示当前位置与边界的对比。'}<br><br>
+                <strong>停止与继续的决策逻辑</strong><br>
+                • <span style="color:var(--accent-red)">🛑 超过边界</span>：|z| ≥ 当前节点边界 → 结果显著，可按预设规则宣告有效并停止实验。此时整体 I 类错误率仍 ≤ α。<br>
+                • <span style="color:var(--accent-green)">▶ 未超过边界</span>：|z| &lt; 当前节点边界 → 证据不足，继续实验，等待下一节点。<br>
+                • <strong>走到最终分析（第 ${K} 次）</strong>：若所有中期节点均未超过边界，在最终分析使用最终边界（|z| ≥ ${finalBoundary.toFixed(3)}，即 p ≤ ${finalP}）做结论。<br><br>
+                <strong>注意事项</strong><br>
+                • <strong>不得追加节点</strong>：实验开始后不能临时增加查看次数，否则消费函数的保证失效。<br>
+                • <strong>不得回溯适用</strong>：序贯边界必须在实验开始前注册，不能在看到数据后才选择此方法。<br>
+                • <strong>效应量报告</strong>：早停时样本量较小，效应量估计偏高（赢者诅咒）；在报告结果时注意说明这一局限性。
+            `;
+
+            this.hasResults = true;
+            trackEvent('compute');
+        }
+    };
 }
 </script>
 <script src="../../assets/changelog.js" data-page="sequential-test" data-base="../../"></script>
