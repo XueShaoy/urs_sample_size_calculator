@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="sl-theme-dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,6 +14,11 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../assets/styles.css">
+    <!-- Shoelace (autoloader + dark theme), applied via <html class="sl-theme-dark"> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/light.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/dark.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"></script>
+    <link rel="stylesheet" href="../../assets/shoelace-theme.css">
     <style>
         .scenario-btn.active { background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)); color: white; }
         .scenario-btn.active.ab-test { background: linear-gradient(135deg, var(--accent-orange), var(--accent-red)); }
@@ -152,7 +157,7 @@
 
         <!-- Global settings -->
         <div style="display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-bottom:16px;">
-            <label style="font-size:0.85rem;color:var(--text-secondary);white-space:nowrap;">最小样本量 <span class="tooltip tip-left" data-tip="计算结果低于此值时自动补足到该阈值。默认 200，可按需调整（如小流量场景可降低，严格实验可提高）。">ⓘ</span></label>
+            <label style="font-size:0.85rem;color:var(--text-secondary);white-space:nowrap;">最小样本量 <sl-tooltip content="计算结果低于此值时自动补足到该阈值。默认 200，可按需调整（如小流量场景可降低，严格实验可提高）。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
             <input type="number" id="min-sample" value="200" min="1" step="1" style="width:100px;padding:6px 10px;background:var(--bg-secondary);border:1px solid var(--border-color);border-radius:8px;color:var(--text-primary);font-size:0.88rem;">
         </div>
 
@@ -168,15 +173,15 @@
                 <div id="m1-monitoring">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>同时观测指标数 k <span class="tooltip tip-right" data-tip="同时检验多个指标时，整体误报率会膨胀。k>1 时自动应用 Bonferroni 校正，将每个指标的显著性水平压缩为 α/k，使整体误报率不超过 α。仅作用于顶部整体结果：k>1 时会隐藏分页面配置，不参与各页面详情计算。">ⓘ</span></label>
+                            <label>同时观测指标数 k <sl-tooltip content="同时检验多个指标时，整体误报率会膨胀。k>1 时自动应用 Bonferroni 校正，将每个指标的显著性水平压缩为 α/k，使整体误报率不超过 α。仅作用于顶部整体结果：k>1 时会隐藏分页面配置，不参与各页面详情计算。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m1-k" value="1" step="1" min="1" max="20" oninput="updateMetricInputs()">
                         </div>
                         <div class="form-group">
-                            <label>显著性水平 α <span class="tooltip" data-tip="假阳性率。α=0.2表示20%概率误报。常用0.05-0.2。多指标时自动校正为 α/k。">ⓘ</span></label>
+                            <label>显著性水平 α <sl-tooltip content="假阳性率。α=0.2表示20%概率误报。常用0.05-0.2。多指标时自动校正为 α/k。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m1-alpha" value="0.2" step="0.01" min="0.01" max="0.5" oninput="updateBonferroniInfo()">
                         </div>
                         <div class="form-group">
-                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。0.7表示70%概率检测到。常用0.6-0.8。">ⓘ</span></label>
+                            <label>统计功效 (1-β) <sl-tooltip content="检测到真实效应的概率。0.7表示70%概率检测到。常用0.6-0.8。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m1-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
@@ -184,11 +189,11 @@
                     <div id="m1-single-metric" style="margin-top:16px;">
                         <div class="form-grid">
                             <div class="form-group">
-                                <label>总体观测目标 p <span class="tooltip tip-right" data-tip="预期的比例值，如满意率、转化率等，填写0-100。仅用于「整体单池」最小样本量估算。若已在下方填写分页面信息，此项可不填——计算时会跳过整体单池结果并给出提示，各页面详情仍按整体 δ 正常计算。">ⓘ</span></label>
+                                <label>总体观测目标 p <sl-tooltip content="预期的比例值，如满意率、转化率等，填写0-100。仅用于「整体单池」最小样本量估算。若已在下方填写分页面信息，此项可不填——计算时会跳过整体单池结果并给出提示，各页面详情仍按整体 δ 正常计算。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                 <div class="input-suffix" data-suffix="%"><input type="number" id="m1-p" placeholder="可选, 例如: 70" step="0.1" min="0" max="100"></div>
                             </div>
                             <div class="form-group">
-                                <label>总体波动精度 δ (MDE) <span class="tooltip" data-tip="希望检测到的整体最小波动。如想检测1%的波动（70%→71%），填1。必填项：既用于整体单池估算，也用于按整体精度反推各页面所需样本量。">ⓘ</span></label>
+                                <label>总体波动精度 δ (MDE) <sl-tooltip content="希望检测到的整体最小波动。如想检测1%的波动（70%→71%），填1。必填项：既用于整体单池估算，也用于按整体精度反推各页面所需样本量。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                 <div class="input-suffix" data-suffix="%"><input type="number" id="m1-delta" placeholder="例如: 1" step="0.1" min="0"></div>
                             </div>
                         </div>
@@ -201,15 +206,15 @@
                 <div id="m1-ab-proportion" style="display:none;">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>总体波动精度 δ (MDE) <span class="tooltip tip-right" data-tip="最小可检测效应：希望检测到的B组相对于A组的最小差异。">ⓘ</span></label>
+                            <label>总体波动精度 δ (MDE) <sl-tooltip content="最小可检测效应：希望检测到的B组相对于A组的最小差异。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <div class="input-suffix" data-suffix="%"><input type="number" id="m1-ab-delta" placeholder="例如: 1" step="0.1" min="0"></div>
                         </div>
                         <div class="form-group">
-                            <label>显著性水平 α <span class="tooltip" data-tip="假阳性率。α=0.2表示20%概率误报。">ⓘ</span></label>
+                            <label>显著性水平 α <sl-tooltip content="假阳性率。α=0.2表示20%概率误报。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m1-ab-alpha" value="0.2" step="0.01" min="0.01" max="0.5">
                         </div>
                         <div class="form-group">
-                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。0.7表示70%概率检测到。">ⓘ</span></label>
+                            <label>统计功效 (1-β) <sl-tooltip content="检测到真实效应的概率。0.7表示70%概率检测到。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m1-ab-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
@@ -218,11 +223,11 @@
                             <div class="column-header control">A 组（对照组 / 基准组）</div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label>预期比例 pA <span class="tooltip tip-right" data-tip="A组（对照组）的预期比例值，作为比较基准。">ⓘ</span></label>
+                                    <label>预期比例 pA <sl-tooltip content="A组（对照组）的预期比例值，作为比较基准。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <div class="input-suffix" data-suffix="%"><input type="number" id="m1-ab-pA" placeholder="例如: 70" step="0.1"></div>
                                 </div>
                                 <div class="form-group">
-                                    <label>样本量 nA <span class="tooltip tip-left" data-tip="A组的样本量（由用户指定）。">ⓘ</span></label>
+                                    <label>样本量 nA <sl-tooltip content="A组的样本量（由用户指定）。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <input type="number" id="m1-ab-nA" placeholder="例如: 5000" step="1" min="1">
                                 </div>
                             </div>
@@ -231,7 +236,7 @@
                             <div class="column-header treatment">B 组（实验组）</div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label>预期比例 pB <span class="tooltip tip-left" data-tip="B组（实验组）的预期比例值。">ⓘ</span></label>
+                                    <label>预期比例 pB <sl-tooltip content="B组（实验组）的预期比例值。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <div class="input-suffix" data-suffix="%"><input type="number" id="m1-ab-pB" placeholder="例如: 70" step="0.1"></div>
                                 </div>
                             </div>
@@ -247,15 +252,15 @@
                 <div id="m1-ab-mean" style="display:none;">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>目标均值差异 δ <span class="tooltip tip-right" data-tip="最小可检测效应：希望检测到的B组相对于A组的最小均值差异（绝对值）。">ⓘ</span></label>
+                            <label>目标均值差异 δ <sl-tooltip content="最小可检测效应：希望检测到的B组相对于A组的最小均值差异（绝对值）。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m1-mean-delta" placeholder="例如: 5" step="0.1" min="0">
                         </div>
                         <div class="form-group">
-                            <label>显著性水平 α <span class="tooltip" data-tip="假阳性率。α=0.2表示20%概率误报。">ⓘ</span></label>
+                            <label>显著性水平 α <sl-tooltip content="假阳性率。α=0.2表示20%概率误报。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m1-mean-alpha" value="0.2" step="0.01" min="0.01" max="0.5">
                         </div>
                         <div class="form-group">
-                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。0.7表示70%概率检测到。">ⓘ</span></label>
+                            <label>统计功效 (1-β) <sl-tooltip content="检测到真实效应的概率。0.7表示70%概率检测到。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m1-mean-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
@@ -264,11 +269,11 @@
                             <div class="column-header control">A 组（对照组 / 基准组）</div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label>标准差 σA <span class="tooltip tip-right" data-tip="标准差 σ = √方差。方差 = Σ(xᵢ-μ)²/n，即各数据点与均值差的平方的平均值。可从历史数据用STDEV函数计算。">ⓘ</span></label>
+                                    <label>标准差 σA <sl-tooltip content="标准差 σ = √方差。方差 = Σ(xᵢ-μ)²/n，即各数据点与均值差的平方的平均值。可从历史数据用STDEV函数计算。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <input type="number" id="m1-mean-sigmaA" placeholder="例如: 20" step="0.1" min="0">
                                 </div>
                                 <div class="form-group">
-                                    <label>样本量 nA <span class="tooltip tip-left" data-tip="A组的样本量（由用户指定）。">ⓘ</span></label>
+                                    <label>样本量 nA <sl-tooltip content="A组的样本量（由用户指定）。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <input type="number" id="m1-mean-nA" placeholder="例如: 5000" step="1" min="1">
                                 </div>
                             </div>
@@ -277,7 +282,7 @@
                             <div class="column-header treatment">B 组（实验组）</div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label>标准差 σB <span class="tooltip tip-left" data-tip="B组指标的标准差。实验前通常假设与A组相同。σ = √(Σ(xᵢ-μ)²/n)">ⓘ</span></label>
+                                    <label>标准差 σB <sl-tooltip content="B组指标的标准差。实验前通常假设与A组相同。σ = √(Σ(xᵢ-μ)²/n)" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <input type="number" id="m1-mean-sigmaB" placeholder="例如: 20" step="0.1" min="0">
                                 </div>
                             </div>
@@ -346,19 +351,19 @@
                 <div id="m2-monitoring">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>总体观测目标 p <span class="tooltip tip-right" data-tip="预期的比例值。填写0-100之间的百分比。">ⓘ</span></label>
+                            <label>总体观测目标 p <sl-tooltip content="预期的比例值。填写0-100之间的百分比。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <div class="input-suffix" data-suffix="%"><input type="number" id="m2-p" placeholder="例如: 70" step="0.1" min="0" max="100"></div>
                         </div>
                         <div class="form-group">
-                            <label>总样本量 n <span class="tooltip" data-tip="当前可获得的单组总样本量。">ⓘ</span></label>
+                            <label>总样本量 n <sl-tooltip content="当前可获得的单组总样本量。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m2-n" placeholder="例如: 10000" step="1" min="1">
                         </div>
                         <div class="form-group">
-                            <label>显著性水平 α <span class="tooltip" data-tip="假阳性率。常用0.05-0.2。">ⓘ</span></label>
+                            <label>显著性水平 α <sl-tooltip content="假阳性率。常用0.05-0.2。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m2-alpha" value="0.2" step="0.01" min="0.01" max="0.5">
                         </div>
                         <div class="form-group">
-                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。常用0.6-0.8。">ⓘ</span></label>
+                            <label>统计功效 (1-β) <sl-tooltip content="检测到真实效应的概率。常用0.6-0.8。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m2-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
@@ -368,11 +373,11 @@
                 <div id="m2-ab-proportion" style="display:none;">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>显著性水平 α <span class="tooltip tip-right" data-tip="假阳性率。常用0.05-0.2。">ⓘ</span></label>
+                            <label>显著性水平 α <sl-tooltip content="假阳性率。常用0.05-0.2。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m2-ab-alpha" value="0.2" step="0.01" min="0.01" max="0.5">
                         </div>
                         <div class="form-group">
-                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。">ⓘ</span></label>
+                            <label>统计功效 (1-β) <sl-tooltip content="检测到真实效应的概率。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m2-ab-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
@@ -381,11 +386,11 @@
                             <div class="column-header control">A 组（对照组 / 基准组）</div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label>预期比例 pA <span class="tooltip tip-right" data-tip="A组（对照组）的预期比例值。">ⓘ</span></label>
+                                    <label>预期比例 pA <sl-tooltip content="A组（对照组）的预期比例值。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <div class="input-suffix" data-suffix="%"><input type="number" id="m2-ab-pA" placeholder="例如: 70" step="0.1"></div>
                                 </div>
                                 <div class="form-group">
-                                    <label>样本量 nA <span class="tooltip tip-left" data-tip="A组的样本量。">ⓘ</span></label>
+                                    <label>样本量 nA <sl-tooltip content="A组的样本量。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <input type="number" id="m2-ab-nA" placeholder="例如: 5000" step="1">
                                 </div>
                             </div>
@@ -394,11 +399,11 @@
                             <div class="column-header treatment">B 组（实验组）</div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label>预期比例 pB <span class="tooltip tip-right" data-tip="B组（实验组）的预期比例值。">ⓘ</span></label>
+                                    <label>预期比例 pB <sl-tooltip content="B组（实验组）的预期比例值。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <div class="input-suffix" data-suffix="%"><input type="number" id="m2-ab-pB" placeholder="例如: 70" step="0.1"></div>
                                 </div>
                                 <div class="form-group">
-                                    <label>样本量 nB <span class="tooltip tip-left" data-tip="B组的样本量。">ⓘ</span></label>
+                                    <label>样本量 nB <sl-tooltip content="B组的样本量。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <input type="number" id="m2-ab-nB" placeholder="例如: 5000" step="1">
                                 </div>
                             </div>
@@ -414,11 +419,11 @@
                 <div id="m2-ab-mean" style="display:none;">
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>显著性水平 α <span class="tooltip tip-right" data-tip="假阳性率。常用0.05-0.2。">ⓘ</span></label>
+                            <label>显著性水平 α <sl-tooltip content="假阳性率。常用0.05-0.2。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m2-mean-alpha" value="0.2" step="0.01" min="0.01" max="0.5">
                         </div>
                         <div class="form-group">
-                            <label>统计功效 (1-β) <span class="tooltip tip-left" data-tip="检测到真实效应的概率。">ⓘ</span></label>
+                            <label>统计功效 (1-β) <sl-tooltip content="检测到真实效应的概率。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                             <input type="number" id="m2-mean-power" value="0.7" step="0.01" min="0.5" max="0.99">
                         </div>
                     </div>
@@ -427,11 +432,11 @@
                             <div class="column-header control">A 组（对照组 / 基准组）</div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label>标准差 σA <span class="tooltip tip-right" data-tip="标准差 σ = √方差。方差 = Σ(xᵢ-μ)²/n，即各数据点与均值差的平方的平均值。可从历史数据用STDEV函数计算。">ⓘ</span></label>
+                                    <label>标准差 σA <sl-tooltip content="标准差 σ = √方差。方差 = Σ(xᵢ-μ)²/n，即各数据点与均值差的平方的平均值。可从历史数据用STDEV函数计算。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <input type="number" id="m2-mean-sigmaA" placeholder="例如: 20" step="0.1" min="0">
                                 </div>
                                 <div class="form-group">
-                                    <label>样本量 nA <span class="tooltip tip-left" data-tip="A组的样本量。">ⓘ</span></label>
+                                    <label>样本量 nA <sl-tooltip content="A组的样本量。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <input type="number" id="m2-mean-nA" placeholder="例如: 5000" step="1">
                                 </div>
                             </div>
@@ -440,11 +445,11 @@
                             <div class="column-header treatment">B 组（实验组）</div>
                             <div class="form-grid">
                                 <div class="form-group">
-                                    <label>标准差 σB <span class="tooltip tip-right" data-tip="B组指标的标准差。实验前通常假设与A组相同。σ = √(Σ(xᵢ-μ)²/n)">ⓘ</span></label>
+                                    <label>标准差 σB <sl-tooltip content="B组指标的标准差。实验前通常假设与A组相同。σ = √(Σ(xᵢ-μ)²/n)" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <input type="number" id="m2-mean-sigmaB" placeholder="例如: 20" step="0.1" min="0">
                                 </div>
                                 <div class="form-group">
-                                    <label>样本量 nB <span class="tooltip tip-left" data-tip="B组的样本量。">ⓘ</span></label>
+                                    <label>样本量 nB <sl-tooltip content="B组的样本量。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
                                     <input type="number" id="m2-mean-nB" placeholder="例如: 5000" step="1">
                                 </div>
                             </div>

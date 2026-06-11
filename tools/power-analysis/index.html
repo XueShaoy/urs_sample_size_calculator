@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="sl-theme-dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +13,13 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../assets/styles.css">
+    <!-- Shoelace (autoloader + dark theme), applied via <html class="sl-theme-dark"> -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/light.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/dark.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"></script>
+    <link rel="stylesheet" href="../../assets/shoelace-theme.css">
+    <!-- Alpine: defer so DOM is parsed first -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
     <style>
         h1 { background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan), var(--accent-blue)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
         .scenario-btn.active { background: linear-gradient(135deg, var(--accent-green), var(--accent-cyan)); color: white; }
@@ -53,7 +60,7 @@
     </style>
     <link rel="stylesheet" href="../../assets/changelog.css">
 </head>
-<body>
+<body x-data="powerAnalysis()" x-cloak>
     <button class="watermark" id="changelog-watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026</button>
 
     <div class="changelog-overlay" id="changelog-overlay" onclick="closeChangelogOnOverlay(event)">
@@ -72,11 +79,11 @@
     </a>
 
     <div class="scenario-switch" role="tablist" aria-label="分析场景">
-        <button type="button" class="scenario-btn active" role="tab" aria-selected="true" data-scenario="monitoring" onclick="switchScenario('monitoring')">
+        <button type="button" class="scenario-btn" :class="{ active: scenario === 'monitoring' }" role="tab" :aria-selected="scenario === 'monitoring'" @click="switchScenario('monitoring')">
             <span class="scenario-btn-short">观测</span>
             <span class="scenario-btn-full">📈 长期观测</span>
         </button>
-        <button type="button" class="scenario-btn" role="tab" aria-selected="false" data-scenario="ab-test" onclick="switchScenario('ab-test')">
+        <button type="button" class="scenario-btn" :class="{ active: scenario === 'ab-test', ab: scenario === 'ab-test' }" role="tab" :aria-selected="scenario === 'ab-test'" @click="switchScenario('ab-test')">
             <span class="scenario-btn-short">AB</span>
             <span class="scenario-btn-full">🧪 AB 测试</span>
         </button>
@@ -86,7 +93,7 @@
         <header>
             <h1>功效分析</h1>
             <p class="subtitle">分析统计功效如何随实验天数增长，确定实验的最优时长</p>
-            <div class="scenario-badge monitoring" id="scenario-badge">📈 长期观测</div>
+            <div class="scenario-badge" :class="scenario === 'ab-test' ? 'ab-test' : 'monitoring'" x-text="scenario === 'ab-test' ? '🧪 AB 测试（等比例分流）' : '📈 长期观测'"></div>
         </header>
 
         <div class="card">
@@ -98,29 +105,29 @@
                 </div>
             </div>
 
-            <div class="traffic-mode-row" id="traffic-mode-row">
+            <div class="traffic-mode-row" :class="{ visible: scenario === 'ab-test' }" x-show="scenario === 'ab-test'">
                 <span class="traffic-mode-label">AB 流量输入方式</span>
                 <div class="mode-tabs">
-                    <button class="mode-tab active" id="tab-ratio" onclick="setTrafficMode('ratio')">总量 + 比例</button>
-                    <button class="mode-tab" id="tab-direct" onclick="setTrafficMode('direct')">分组直接输入</button>
+                    <button class="mode-tab" :class="{ active: abTrafficMode === 'ratio' }" @click="setTrafficMode('ratio')">总量 + 比例</button>
+                    <button class="mode-tab" :class="{ active: abTrafficMode === 'direct' }" @click="setTrafficMode('direct')">分组直接输入</button>
                 </div>
             </div>
 
             <div class="form-grid">
-                <div class="form-group" id="daily-n-group">
+                <div class="form-group" x-show="showDailyN">
                     <label>
                         日均流量
-                        <span class="tooltip tip-bottom" data-tip="每天进入实验的用户总数。AB 测试中按分流比例分配给对照组与实验组。">ⓘ</span>
+                        <sl-tooltip content="每天进入实验的用户总数。AB 测试中按分流比例分配给对照组与实验组。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="daily-n" min="1" step="1" placeholder="e.g. 10000">
+                    <input type="number" x-model="dailyN" :class="{ 'input-error': errors.dailyN }" min="1" step="1" placeholder="e.g. 10000">
                 </div>
-                <div class="form-group" id="split-group" style="display:none">
+                <div class="form-group" x-show="abTrafficMode === 'ratio' && scenario === 'ab-test'">
                     <label>
                         分流比例 (A : B)
-                        <span class="tooltip tip-bottom" data-tip="对照组与实验组的流量分配比例。1:1 表示等比例分流；1:2 表示实验组流量是对照组的两倍。非等比分流会降低统计效率，需要更多总样本量。">ⓘ</span>
+                        <sl-tooltip content="对照组与实验组的流量分配比例。1:1 表示等比例分流；1:2 表示实验组流量是对照组的两倍。非等比分流会降低统计效率，需要更多总样本量。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <select id="split-ratio">
-                        <option value="1:1" selected>1 : 1</option>
+                    <select x-model="splitRatio">
+                        <option value="1:1">1 : 1</option>
                         <option value="1:2">1 : 2</option>
                         <option value="1:3">1 : 3</option>
                         <option value="1:4">1 : 4</option>
@@ -129,52 +136,52 @@
                         <option value="4:1">4 : 1</option>
                     </select>
                 </div>
-                <div class="form-group" id="daily-na-group" style="display:none">
+                <div class="form-group" x-show="abTrafficMode === 'direct'">
                     <label>
                         A组日均流量（对照组）
-                        <span class="tooltip tip-bottom" data-tip="对照组每天进入实验的用户数量。">ⓘ</span>
+                        <sl-tooltip content="对照组每天进入实验的用户数量。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="daily-na" min="1" step="1" placeholder="e.g. 5000">
+                    <input type="number" x-model="dailyNa" :class="{ 'input-error': errors.dailyNa }" min="1" step="1" placeholder="e.g. 5000">
                 </div>
-                <div class="form-group" id="daily-nb-group" style="display:none">
+                <div class="form-group" x-show="abTrafficMode === 'direct'">
                     <label>
                         B组日均流量（实验组）
-                        <span class="tooltip tip-bottom" data-tip="实验组每天进入实验的用户数量。">ⓘ</span>
+                        <sl-tooltip content="实验组每天进入实验的用户数量。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="daily-nb" min="1" step="1" placeholder="e.g. 5000">
+                    <input type="number" x-model="dailyNb" :class="{ 'input-error': errors.dailyNb }" min="1" step="1" placeholder="e.g. 5000">
                 </div>
                 <div class="form-group">
                     <label>
                         基准转化率 p₀ (%)
-                        <span class="tooltip tip-bottom" data-tip="当前历史转化率，作为计算基准。填写百分比数值，如 60 代表 60%。">ⓘ</span>
+                        <sl-tooltip content="当前历史转化率，作为计算基准。填写百分比数值，如 60 代表 60%。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="p0" min="0.01" max="99.99" step="0.01" placeholder="e.g. 60">
+                    <input type="number" x-model="p0" :class="{ 'input-error': errors.p0 }" min="0.01" max="99.99" step="0.01" placeholder="e.g. 60">
                 </div>
                 <div class="form-group">
                     <label>
                         目标 MDE δ (%)
-                        <span class="tooltip tip-bottom" data-tip="期望检测到的最小效应量（绝对百分点）。用于绘制「功效 vs 天数」曲线。留空则仅显示 MDE 曲线。">ⓘ</span>
+                        <sl-tooltip content="期望检测到的最小效应量（绝对百分点）。用于绘制「功效 vs 天数」曲线。留空则仅显示 MDE 曲线。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="delta" min="0.01" step="0.01" placeholder="可选，e.g. 5">
+                    <input type="number" x-model="delta" :class="{ 'input-error': errors.delta }" min="0.01" step="0.01" placeholder="可选，e.g. 5">
                 </div>
                 <div class="form-group">
                     <label>
                         显著性水平 α
-                        <span class="tooltip tip-bottom" data-tip="误报率上限：当实验实际无效时，仍得出「有效」结论的最大概率。α = 0.05 表示最多接受 5% 的误报风险。α 越小，结论越保守，所需样本量越大。">ⓘ</span>
+                        <sl-tooltip content="误报率上限：当实验实际无效时，仍得出「有效」结论的最大概率。α = 0.05 表示最多接受 5% 的误报风险。α 越小，结论越保守，所需样本量越大。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <select id="alpha">
+                    <select x-model="alpha">
                         <option value="0.05">0.05</option>
                         <option value="0.10">0.10</option>
-                        <option value="0.20" selected>0.20</option>
+                        <option value="0.20">0.20</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label>
                         目标功效
-                        <span class="tooltip tip-bottom" data-tip="MDE 曲线以此功效为计算标准；功效曲线中的参考线也取此值，交叉点即为「达标天数」。">ⓘ</span>
+                        <sl-tooltip content="MDE 曲线以此功效为计算标准；功效曲线中的参考线也取此值，交叉点即为「达标天数」。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <select id="target-power">
-                        <option value="0.70" selected>70%</option>
+                    <select x-model="targetPower">
+                        <option value="0.70">70%</option>
                         <option value="0.80">80%</option>
                         <option value="0.90">90%</option>
                     </select>
@@ -182,71 +189,43 @@
                 <div class="form-group">
                     <label>
                         最多观测天数
-                        <span class="tooltip tip-bottom" data-tip="横轴最大天数，建议设为实验计划最长周期。">ⓘ</span>
+                        <sl-tooltip content="横轴最大天数，建议设为实验计划最长周期。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip>
                     </label>
-                    <input type="number" id="max-days" min="2" max="365" step="1" value="28">
+                    <input type="number" x-model="maxDays" :class="{ 'input-error': errors.maxDays }" min="2" max="365" step="1">
                 </div>
             </div>
             <div class="action-row">
-                <button class="btn btn-primary" onclick="run()">▶ 开始分析</button>
+                <button class="btn btn-primary" @click="run()">▶ 开始分析</button>
             </div>
         </div>
 
-        <div class="validation-banner" id="validation-banner" role="alert" aria-live="polite" hidden></div>
+        <div class="validation-banner" role="alert" aria-live="polite" x-show="errorList.length" x-cloak>
+            <template x-for="msg in errorList" :key="msg"><div>⚠ <span x-text="msg"></span></div></template>
+        </div>
 
-        <div class="results-section" id="results">
-            <div class="summary-grid" id="summary-grid"></div>
+        <div class="results-section" :class="{ visible: hasResults }" x-ref="results">
+            <div class="summary-grid" x-ref="summaryGrid"></div>
             <div class="chart-grid">
                 <div class="chart-wrap">
                     <div class="chart-title">功效曲线</div>
-                    <div class="chart-subtitle" id="power-subtitle"></div>
-                    <div id="power-chart"></div>
+                    <div class="chart-subtitle" x-ref="powerSubtitle"></div>
+                    <div x-ref="powerChart"></div>
                 </div>
                 <div class="chart-wrap">
                     <div class="chart-title">MDE 曲线</div>
-                    <div class="chart-subtitle" id="mde-subtitle"></div>
-                    <div id="mde-chart"></div>
+                    <div class="chart-subtitle" x-ref="mdeSubtitle"></div>
+                    <div x-ref="mdeChart"></div>
                 </div>
             </div>
             <div class="formula-section">
                 <div class="formula-label">计算公式</div>
-                <div class="formula-text" id="formula-text"></div>
+                <div class="formula-text" x-ref="formula"></div>
             </div>
         </div>
     </div>
 
 <script>
-let scenario = 'monitoring';
-let abTrafficMode = 'ratio';
-
-function setTrafficMode(mode) {
-    abTrafficMode = mode;
-    document.getElementById('tab-ratio').classList.toggle('active', mode === 'ratio');
-    document.getElementById('tab-direct').classList.toggle('active', mode === 'direct');
-    document.getElementById('daily-n-group').style.display  = mode === 'ratio' ? '' : 'none';
-    document.getElementById('split-group').style.display    = (mode === 'ratio' && scenario === 'ab-test') ? '' : 'none';
-    document.getElementById('daily-na-group').style.display = mode === 'direct' ? '' : 'none';
-    document.getElementById('daily-nb-group').style.display = mode === 'direct' ? '' : 'none';
-    document.getElementById('results').classList.remove('visible');
-}
-
-function switchScenario(s) {
-    scenario = s;
-    document.querySelectorAll('.scenario-btn').forEach(btn => {
-        const active = btn.dataset.scenario === s;
-        btn.classList.toggle('active', active);
-        btn.classList.toggle('ab', active && s === 'ab-test');
-        btn.setAttribute('aria-selected', active ? 'true' : 'false');
-    });
-    const badge = document.getElementById('scenario-badge');
-    badge.className = 'scenario-badge ' + (s === 'ab-test' ? 'ab-test' : 'monitoring');
-    badge.textContent = s === 'ab-test' ? '🧪 AB 测试（等比例分流）' : '📈 长期观测';
-    document.getElementById('traffic-mode-row').classList.toggle('visible', s === 'ab-test');
-    setTrafficMode(s === 'ab-test' ? abTrafficMode : 'ratio');
-    document.getElementById('results').classList.remove('visible');
-}
-
-// ===== Statistical core =====
+// ===== Statistical core (pure, module scope) =====
 
 function erf(x) {
     const t = 1 / (1 + 0.3275911 * Math.abs(x));
@@ -278,26 +257,24 @@ function normInv(p) {
 
 function variance(p) { return p * (1 - p); }
 
-function getSplitRatio() {
-    const [a, b] = document.getElementById('split-ratio').value.split(':').map(Number);
+function getSplitRatio(splitRatio) {
+    const [a, b] = String(splitRatio).split(':').map(Number);
     return { rA: a, rB: b };
 }
 
-// Returns { nA, nB } per day
-function nForDay(dailyN, day) {
-    if (scenario !== 'ab-test') return { nA: dailyN * day, nB: dailyN * day };
-    if (abTrafficMode === 'direct') {
-        const na = parseFloat(document.getElementById('daily-na').value) || 0;
-        const nb = parseFloat(document.getElementById('daily-nb').value) || 0;
-        return { nA: na * day, nB: nb * day };
+// Returns { nA, nB } per day. ctx = { scenario, abTrafficMode, dailyN, dailyNa, dailyNb, splitRatio }
+function nForDay(day, ctx) {
+    if (ctx.scenario !== 'ab-test') return { nA: ctx.dailyN * day, nB: ctx.dailyN * day };
+    if (ctx.abTrafficMode === 'direct') {
+        return { nA: (ctx.dailyNa || 0) * day, nB: (ctx.dailyNb || 0) * day };
     }
-    const total = dailyN * day;
-    const { rA, rB } = getSplitRatio();
+    const total = ctx.dailyN * day;
+    const { rA, rB } = getSplitRatio(ctx.splitRatio);
     return { nA: total * rA / (rA + rB), nB: total * rB / (rA + rB) };
 }
 
 // nA = control group n, nB = treatment group n
-function calcPower(p0, delta, nA, nB, alpha) {
+function calcPower(p0, delta, nA, nB, alpha, scenario) {
     const se = scenario === 'ab-test'
         ? Math.sqrt(variance(p0) / nA + variance(p0 + delta) / nB)
         : Math.sqrt(variance(p0) / nA);
@@ -305,7 +282,7 @@ function calcPower(p0, delta, nA, nB, alpha) {
 }
 
 // MDE at target power (approximates pA≈pB≈p0 for AB)
-function calcMDE(p0, nA, nB, alpha, power) {
+function calcMDE(p0, nA, nB, alpha, power, scenario) {
     const z = normInv(1 - alpha / 2) + normInv(power);
     const se = scenario === 'ab-test'
         ? Math.sqrt(variance(p0) / nA + variance(p0) / nB)
@@ -315,17 +292,17 @@ function calcMDE(p0, nA, nB, alpha, power) {
 
 // ===== Curve builders =====
 
-function buildPowerCurve(dailyN, p0, delta, alpha, maxDays) {
+function buildPowerCurve(p0, delta, alpha, maxDays, ctx) {
     return Array.from({ length: maxDays }, (_, i) => {
-        const { nA, nB } = nForDay(dailyN, i + 1);
-        return { day: i + 1, value: Math.min(calcPower(p0, delta, nA, nB, alpha) * 100, 99.99) };
+        const { nA, nB } = nForDay(i + 1, ctx);
+        return { day: i + 1, value: Math.min(calcPower(p0, delta, nA, nB, alpha, ctx.scenario) * 100, 99.99) };
     });
 }
 
-function buildMDECurve(dailyN, p0, alpha, targetPower, maxDays) {
+function buildMDECurve(p0, alpha, targetPower, maxDays, ctx) {
     return Array.from({ length: maxDays }, (_, i) => {
-        const { nA, nB } = nForDay(dailyN, i + 1);
-        return { day: i + 1, value: calcMDE(p0, nA, nB, alpha, targetPower) * 100 };
+        const { nA, nB } = nForDay(i + 1, ctx);
+        return { day: i + 1, value: calcMDE(p0, nA, nB, alpha, targetPower, ctx.scenario) * 100 };
     });
 }
 
@@ -536,198 +513,191 @@ function renderChart(container, { curve, yLabel, yMin, yMax, thresholdY, thresho
     hitArea.addEventListener('touchend', hideTooltip);
 }
 
-// ===== Main =====
+// ===== Alpine factory =====
 
-function clearFieldError(input) {
-    if (!input) return;
-    input.classList.remove('input-error');
-    input.removeAttribute('aria-invalid');
-    const group = input.closest('.form-group') || input.parentElement;
-    group?.querySelector('.field-error-msg')?.remove();
-}
+function powerAnalysis() {
+    return {
+        scenario: 'monitoring',
+        abTrafficMode: 'ratio',
+        dailyN: '',
+        splitRatio: '1:1',
+        dailyNa: '',
+        dailyNb: '',
+        p0: '',
+        delta: '',
+        alpha: '0.20',
+        targetPower: '0.70',
+        maxDays: 28,
+        errors: {},
+        errorList: [],
+        hasResults: false,
 
-function clearValidation() {
-    document.querySelectorAll('.input-error').forEach(clearFieldError);
-    const banner = document.getElementById('validation-banner');
-    if (banner) { banner.hidden = true; banner.innerHTML = ''; }
-}
+        get showDailyN() {
+            return this.scenario !== 'ab-test' || this.abTrafficMode === 'ratio';
+        },
 
-function setFieldError(inputId, message) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
-    input.classList.add('input-error');
-    input.setAttribute('aria-invalid', 'true');
-    const group = input.closest('.form-group') || input.parentElement;
-    if (!group) return;
-    let msg = group.querySelector('.field-error-msg');
-    if (!msg) {
-        msg = document.createElement('span');
-        msg.className = 'field-error-msg';
-        msg.setAttribute('role', 'alert');
-        group.appendChild(msg);
-    }
-    msg.textContent = message;
-}
+        switchScenario(s) {
+            this.scenario = s;
+            if (s !== 'ab-test') this.abTrafficMode = 'ratio';
+            this.hasResults = false;
+        },
 
-function showValidationErrors(errors) {
-    clearValidation();
-    const unique = [];
-    const seen = new Set();
-    for (const err of errors) {
-        const key = `${err.id || ''}:${err.message}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        unique.push(err);
-    }
-    let firstFocus = null;
-    for (const err of unique) {
-        if (err.id) {
-            setFieldError(err.id, err.message);
-            if (!firstFocus) firstFocus = document.getElementById(err.id);
+        setTrafficMode(mode) {
+            this.abTrafficMode = mode;
+            this.hasResults = false;
+        },
+
+        run() {
+            this.errors = {};
+            this.errorList = [];
+
+            const dailyN  = parseFloat(this.dailyN);
+            const dailyNa = parseFloat(this.dailyNa);
+            const dailyNb = parseFloat(this.dailyNb);
+            const p0Raw   = parseFloat(this.p0);
+            const deltaRaw = parseFloat(this.delta);
+            const alpha   = parseFloat(this.alpha);
+            const targetPower = parseFloat(this.targetPower);
+            const maxDays = parseInt(this.maxDays);
+
+            const isDirect = this.scenario === 'ab-test' && this.abTrafficMode === 'direct';
+            const errs = {};
+            const list = [];
+            const add = (key, msg) => { errs[key] = true; list.push(msg); };
+
+            if (!isDirect && (!dailyN || dailyN < 1)) add('dailyN', '请填写有效的日均流量');
+            if (isDirect) {
+                if (!dailyNa || dailyNa < 1) add('dailyNa', '请填写有效的 A 组日均流量');
+                if (!dailyNb || dailyNb < 1) add('dailyNb', '请填写有效的 B 组日均流量');
+            }
+            if (!p0Raw || p0Raw <= 0 || p0Raw >= 100) add('p0', '基准转化率需在 0%–100% 之间');
+            if (!maxDays || maxDays < 2) add('maxDays', '最多观测天数至少为 2');
+
+            const p0 = p0Raw / 100;
+            const delta = (!isNaN(deltaRaw) && deltaRaw > 0) ? deltaRaw / 100 : null;
+
+            if (delta && p0 > 0 && p0 < 1 && p0 + delta >= 1) add('delta', 'p₀ + δ 超出 100%，请调整参数');
+
+            if (list.length) {
+                this.errors = errs;
+                this.errorList = list;
+                this.hasResults = false;
+                const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+                this.$el.querySelector('.validation-banner')?.scrollIntoView({ behavior: scrollBehavior, block: 'center' });
+                return;
+            }
+
+            const ctx = {
+                scenario: this.scenario,
+                abTrafficMode: this.abTrafficMode,
+                dailyN: isDirect ? 1 : dailyN,
+                dailyNa, dailyNb,
+                splitRatio: this.splitRatio,
+            };
+
+            const targetPowerPct = Math.round(targetPower * 100);
+
+            // Build curves
+            const mdeCurve   = buildMDECurve(p0, alpha, targetPower, maxDays, ctx);
+            const powerCurve = delta ? buildPowerCurve(p0, delta, alpha, maxDays, ctx) : null;
+
+            const mdeAt1   = mdeCurve[0].value;
+            const mdeAtMax = mdeCurve[maxDays - 1].value;
+            const crossDay    = powerCurve ? findCrossDay(powerCurve, targetPower * 100) : null;
+            const powerAtMax  = powerCurve ? powerCurve[maxDays - 1].value : null;
+            const mdeDropDay  = delta ? findDropDay(mdeCurve, delta * 100) : null;
+
+            // Summary stats
+            let html = '';
+            if (delta) {
+                const reachable = crossDay !== null;
+                html += `<div class="stat-card">
+                    <div class="stat-label">达到 ${targetPowerPct}% 功效所需天数</div>
+                    <div class="stat-value ${reachable ? 'good' : 'warn'}">${reachable ? crossDay : '&gt;' + maxDays}<span class="stat-unit">天</span></div>
+                    <div class="stat-note">δ = ${deltaRaw.toFixed(2)}%，α = ${alpha}</div>
+                </div>`;
+                html += `<div class="stat-card">
+                    <div class="stat-label">第 ${maxDays} 天的统计功效</div>
+                    <div class="stat-value ${powerAtMax >= targetPower * 100 ? 'good' : 'warn'}">${powerAtMax.toFixed(1)}<span class="stat-unit">%</span></div>
+                    <div class="stat-note">δ = ${deltaRaw.toFixed(2)}%，α = ${alpha}</div>
+                </div>`;
+            }
+            html += `<div class="stat-card">
+                <div class="stat-label">第 ${maxDays} 天可检测 MDE</div>
+                <div class="stat-value">${mdeAtMax.toFixed(2)}<span class="stat-unit">%</span></div>
+                <div class="stat-note">功效 ${targetPowerPct}%，α = ${alpha}</div>
+            </div>`;
+            const { nA: nA1, nB: nB1 } = nForDay(1, ctx);
+            const groupNote = this.scenario === 'ab-test'
+                ? `A组 ${Math.round(nA1).toLocaleString()} 人 / B组 ${Math.round(nB1).toLocaleString()} 人`
+                : `${Math.round(nA1).toLocaleString()} 人`;
+            html += `<div class="stat-card">
+                <div class="stat-label">第 1 天 MDE（单日流量）</div>
+                <div class="stat-value">${mdeAt1.toFixed(2)}<span class="stat-unit">%</span></div>
+                <div class="stat-note">${groupNote}</div>
+            </div>`;
+            this.$refs.summaryGrid.innerHTML = html;
+
+            // Power chart
+            const powerEl = this.$refs.powerChart;
+            if (powerCurve) {
+                renderChart(powerEl, {
+                    curve: powerCurve,
+                    yLabel: '功效 (%)', yMin: 0, yMax: 100,
+                    thresholdY: targetPower * 100,
+                    thresholdLabel: `${targetPowerPct}%`,
+                    markerDay: crossDay,
+                    color: '#10b981'
+                });
+                this.$refs.powerSubtitle.textContent = `δ = ${deltaRaw.toFixed(2)}%，α = ${alpha}`;
+            } else {
+                powerEl.innerHTML = `<div class="chart-empty">填写目标 MDE δ 以显示功效曲线</div>`;
+                this.$refs.powerSubtitle.textContent = '';
+            }
+
+            // MDE chart
+            const mdeYMax = Math.max(mdeAt1 * 1.15, delta ? delta * 100 * 1.25 : 0);
+            renderChart(this.$refs.mdeChart, {
+                curve: mdeCurve,
+                yLabel: 'MDE (%)', yMin: 0, yMax: mdeYMax,
+                thresholdY: delta ? delta * 100 : undefined,
+                thresholdLabel: delta ? `δ = ${deltaRaw.toFixed(2)}%` : undefined,
+                markerDay: mdeDropDay,
+                color: '#06b6d4'
+            });
+            this.$refs.mdeSubtitle.textContent = `目标功效 ${targetPowerPct}%，α = ${alpha}`;
+
+            // Formula
+            const za = normInv(1 - alpha / 2).toFixed(3);
+            const zb = normInv(targetPower).toFixed(3);
+            const isAB = this.scenario === 'ab-test';
+            let nDesc;
+            if (!isAB) {
+                nDesc = 'n = 日均流量 × 天数';
+            } else if (this.abTrafficMode === 'direct') {
+                nDesc = `n<sub>A</sub> = ${Math.round(dailyNa).toLocaleString()} × 天数，n<sub>B</sub> = ${Math.round(dailyNb).toLocaleString()} × 天数`;
+            } else {
+                const { rA, rB } = getSplitRatio(this.splitRatio);
+                nDesc = `n<sub>A</sub> = 日均流量 × ${rA}/${rA+rB} × 天数，n<sub>B</sub> = 日均流量 × ${rB}/${rA+rB} × 天数`;
+            }
+            this.$refs.formula.innerHTML =
+                `<strong>${isAB ? 'AB 测试' : '长期观测（单样本）'}</strong><br>
+                ${nDesc}<br>
+                SE = ${isAB ? '√( p₀(1−p₀)/n<sub>A</sub> + p₁(1−p₁)/n<sub>B</sub> )，p₁ = p₀ + δ' : '√( p₀(1−p₀)/n )'}<br>
+                功效 = Φ( δ/SE − z<sub>α/2</sub> )，其中 z<sub>α/2</sub> = ${za}<br>
+                MDE（功效 ${targetPowerPct}%）= (z<sub>α/2</sub> + z<sub>β</sub>) × SE = (${za} + ${zb}) × SE`;
+
+            this.hasResults = true;
+            this.$nextTick(() => {
+                const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+                this.$refs.results.scrollIntoView({ behavior: scrollBehavior, block: 'start' });
+            });
+
+            if (typeof gtag !== 'undefined') {
+                gtag('event', 'run_power_analysis', { event_category: 'power_analysis', scenario: this.scenario });
+            }
         }
-    }
-    const banner = document.getElementById('validation-banner');
-    if (banner) {
-        banner.hidden = false;
-        banner.innerHTML = unique.map(e => `<div>⚠ ${e.message}</div>`).join('');
-    }
-    document.getElementById('results').classList.remove('visible');
-    const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
-    const target = firstFocus || banner;
-    if (firstFocus) firstFocus.focus({ preventScroll: true });
-    target?.scrollIntoView({ behavior: scrollBehavior, block: 'center' });
-    return false;
-}
-
-function run() {
-    clearValidation();
-    const dailyN  = parseFloat(document.getElementById('daily-n').value);
-    const dailyNa = parseFloat(document.getElementById('daily-na').value);
-    const dailyNb = parseFloat(document.getElementById('daily-nb').value);
-    const p0Raw   = parseFloat(document.getElementById('p0').value);
-    const deltaRaw = parseFloat(document.getElementById('delta').value);
-    const alpha   = parseFloat(document.getElementById('alpha').value);
-    const targetPower = parseFloat(document.getElementById('target-power').value);
-    const maxDays = parseInt(document.getElementById('max-days').value);
-
-    const isDirect = scenario === 'ab-test' && abTrafficMode === 'direct';
-    const errors = [];
-    if (!isDirect && (!dailyN || dailyN < 1)) errors.push({ id: 'daily-n', message: '请填写有效的日均流量' });
-    if (isDirect) {
-        if (!dailyNa || dailyNa < 1) errors.push({ id: 'daily-na', message: '请填写有效的 A 组日均流量' });
-        if (!dailyNb || dailyNb < 1) errors.push({ id: 'daily-nb', message: '请填写有效的 B 组日均流量' });
-    }
-    if (!p0Raw || p0Raw <= 0 || p0Raw >= 100) errors.push({ id: 'p0', message: '基准转化率需在 0%–100% 之间' });
-    if (!maxDays || maxDays < 2) errors.push({ id: 'max-days', message: '最多观测天数至少为 2' });
-
-    const p0 = p0Raw / 100;
-    const delta = (!isNaN(deltaRaw) && deltaRaw > 0) ? deltaRaw / 100 : null;
-
-    if (delta && p0 > 0 && p0 < 1 && p0 + delta >= 1) errors.push({ id: 'delta', message: 'p₀ + δ 超出 100%，请调整参数' });
-
-    if (errors.length) return showValidationErrors(errors);
-
-    // effective dailyN for nForDay (only used in ratio mode; direct mode reads fields directly)
-    const effectiveDailyN = isDirect ? 1 : dailyN;
-
-    const targetPowerPct = Math.round(targetPower * 100);
-
-    // Build curves
-    const mdeCurve   = buildMDECurve(effectiveDailyN, p0, alpha, targetPower, maxDays);
-    const powerCurve = delta ? buildPowerCurve(effectiveDailyN, p0, delta, alpha, maxDays) : null;
-
-    const mdeAt1   = mdeCurve[0].value;
-    const mdeAtMax = mdeCurve[maxDays - 1].value;
-    const crossDay    = powerCurve ? findCrossDay(powerCurve, targetPower * 100) : null;
-    const powerAtMax  = powerCurve ? powerCurve[maxDays - 1].value : null;
-    const mdeDropDay  = delta ? findDropDay(mdeCurve, delta * 100) : null;
-
-    // Summary stats
-    let html = '';
-    if (delta) {
-        const reachable = crossDay !== null;
-        html += `<div class="stat-card">
-            <div class="stat-label">达到 ${targetPowerPct}% 功效所需天数</div>
-            <div class="stat-value ${reachable ? 'good' : 'warn'}">${reachable ? crossDay : '&gt;' + maxDays}<span class="stat-unit">天</span></div>
-            <div class="stat-note">δ = ${deltaRaw.toFixed(2)}%，α = ${alpha}</div>
-        </div>`;
-        html += `<div class="stat-card">
-            <div class="stat-label">第 ${maxDays} 天的统计功效</div>
-            <div class="stat-value ${powerAtMax >= targetPower * 100 ? 'good' : 'warn'}">${powerAtMax.toFixed(1)}<span class="stat-unit">%</span></div>
-            <div class="stat-note">δ = ${deltaRaw.toFixed(2)}%，α = ${alpha}</div>
-        </div>`;
-    }
-    html += `<div class="stat-card">
-        <div class="stat-label">第 ${maxDays} 天可检测 MDE</div>
-        <div class="stat-value">${mdeAtMax.toFixed(2)}<span class="stat-unit">%</span></div>
-        <div class="stat-note">功效 ${targetPowerPct}%，α = ${alpha}</div>
-    </div>`;
-    const { nA: nA1, nB: nB1 } = nForDay(effectiveDailyN, 1);
-    const groupNote = scenario === 'ab-test'
-        ? `A组 ${Math.round(nA1).toLocaleString()} 人 / B组 ${Math.round(nB1).toLocaleString()} 人`
-        : `${Math.round(nA1).toLocaleString()} 人`;
-    html += `<div class="stat-card">
-        <div class="stat-label">第 1 天 MDE（单日流量）</div>
-        <div class="stat-value">${mdeAt1.toFixed(2)}<span class="stat-unit">%</span></div>
-        <div class="stat-note">${groupNote}</div>
-    </div>`;
-    document.getElementById('summary-grid').innerHTML = html;
-
-    // Power chart
-    const powerEl = document.getElementById('power-chart');
-    if (powerCurve) {
-        renderChart(powerEl, {
-            curve: powerCurve,
-            yLabel: '功效 (%)', yMin: 0, yMax: 100,
-            thresholdY: targetPower * 100,
-            thresholdLabel: `${targetPowerPct}%`,
-            markerDay: crossDay,
-            color: '#10b981'
-        });
-        document.getElementById('power-subtitle').textContent = `δ = ${deltaRaw.toFixed(2)}%，α = ${alpha}`;
-    } else {
-        powerEl.innerHTML = `<div class="chart-empty">填写目标 MDE δ 以显示功效曲线</div>`;
-        document.getElementById('power-subtitle').textContent = '';
-    }
-
-    // MDE chart
-    const mdeYMax = Math.max(mdeAt1 * 1.15, delta ? delta * 100 * 1.25 : 0);
-    renderChart(document.getElementById('mde-chart'), {
-        curve: mdeCurve,
-        yLabel: 'MDE (%)', yMin: 0, yMax: mdeYMax,
-        thresholdY: delta ? delta * 100 : undefined,
-        thresholdLabel: delta ? `δ = ${deltaRaw.toFixed(2)}%` : undefined,
-        markerDay: mdeDropDay,
-        color: '#06b6d4'
-    });
-    document.getElementById('mde-subtitle').textContent = `目标功效 ${targetPowerPct}%，α = ${alpha}`;
-
-    // Formula
-    const za = normInv(1 - alpha / 2).toFixed(3);
-    const zb = normInv(targetPower).toFixed(3);
-    const isAB = scenario === 'ab-test';
-    let nDesc;
-    if (!isAB) {
-        nDesc = 'n = 日均流量 × 天数';
-    } else if (abTrafficMode === 'direct') {
-        nDesc = `n<sub>A</sub> = ${Math.round(dailyNa).toLocaleString()} × 天数，n<sub>B</sub> = ${Math.round(dailyNb).toLocaleString()} × 天数`;
-    } else {
-        const { rA, rB } = getSplitRatio();
-        nDesc = `n<sub>A</sub> = 日均流量 × ${rA}/${rA+rB} × 天数，n<sub>B</sub> = 日均流量 × ${rB}/${rA+rB} × 天数`;
-    }
-    document.getElementById('formula-text').innerHTML =
-        `<strong>${isAB ? 'AB 测试' : '长期观测（单样本）'}</strong><br>
-        ${nDesc}<br>
-        SE = ${isAB ? '√( p₀(1−p₀)/n<sub>A</sub> + p₁(1−p₁)/n<sub>B</sub> )，p₁ = p₀ + δ' : '√( p₀(1−p₀)/n )'}<br>
-        功效 = Φ( δ/SE − z<sub>α/2</sub> )，其中 z<sub>α/2</sub> = ${za}<br>
-        MDE（功效 ${targetPowerPct}%）= (z<sub>α/2</sub> + z<sub>β</sub>) × SE = (${za} + ${zb}) × SE`;
-
-    document.getElementById('results').classList.add('visible');
-    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-    if (typeof gtag !== 'undefined') {
-        gtag('event', 'run_power_analysis', { event_category: 'power_analysis', scenario });
-    }
+    };
 }
 </script>
 <script src="../../assets/changelog.js" data-page="power-analysis" data-base="../../"></script>

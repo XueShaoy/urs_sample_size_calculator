@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" class="sl-theme-dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>显著性检验 · z 比例检验</title>
-    <!-- Google tag (gtag.js) -->
     <script async src="https://www.googletagmanager.com/gtag/js?id=G-VQV08H7W6V"></script>
     <script>
       window.dataLayer = window.dataLayer || [];
@@ -14,7 +13,15 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="../../assets/styles.css">
+    <!-- Shoelace -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/light.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/themes/dark.css">
+    <script type="module" src="https://cdn.jsdelivr.net/npm/@shoelace-style/shoelace@2.20.1/cdn/shoelace-autoloader.js"></script>
+    <link rel="stylesheet" href="../../assets/shoelace-theme.css">
+    <!-- Alpine.js -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.15.12/dist/cdn.min.js"></script>
     <style>
+        [x-cloak] { display: none !important; }
         .scenario-btn.active { background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue)); color: white; }
         .scenario-badge { background: rgba(139,92,246,0.15); color: var(--accent-purple); border: 1px solid rgba(139,92,246,0.3); }
         .data-toolbar { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; align-items: center; }
@@ -51,7 +58,7 @@
     </style>
     <link rel="stylesheet" href="../../assets/changelog.css">
 </head>
-<body>
+<body x-data="significanceTest()" x-cloak>
     <button class="watermark" id="changelog-watermark" onclick="openChangelog()" title="点击查看更新日志">URS数据科学团队 © 2026</button>
 
     <div class="changelog-overlay" id="changelog-overlay" onclick="closeChangelogOnOverlay(event)">
@@ -70,11 +77,11 @@
     </a>
 
     <div class="scenario-switch" role="tablist" aria-label="检验类型">
-        <button type="button" class="scenario-btn active" role="tab" aria-selected="true" data-test="single" onclick="switchTest('single')">
+        <button type="button" class="scenario-btn" role="tab" :class="{ active: testType === 'single' }" :aria-selected="testType === 'single'" @click="switchTest('single')">
             <span class="scenario-btn-short">单样</span>
             <span class="scenario-btn-full">📍 单样本检验</span>
         </button>
-        <button type="button" class="scenario-btn" role="tab" aria-selected="false" data-test="two" onclick="switchTest('two')">
+        <button type="button" class="scenario-btn" role="tab" :class="{ active: testType === 'two' }" :aria-selected="testType === 'two'" @click="switchTest('two')">
             <span class="scenario-btn-short">双样</span>
             <span class="scenario-btn-full">⚖️ 双样本检验</span>
         </button>
@@ -84,7 +91,7 @@
         <header>
             <h1>显著性检验</h1>
             <p class="subtitle">z 比例检验 · 支持森林图可视化与本地 CSV 数据</p>
-            <div class="scenario-badge" id="test-badge">📍 单样本 z 比例检验</div>
+            <div class="scenario-badge" x-text="testType === 'single' ? '📍 单样本 z 比例检验' : '⚖️ 双样本 z 比例检验'"></div>
         </header>
 
         <!-- 参数设置 -->
@@ -95,32 +102,32 @@
             </div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>显著性水平 α <span class="tooltip tip-right" data-tip="假阳性率。α=0.05 表示 5% 概率误报。置信区间置信度为 1-α。">ⓘ</span></label>
-                    <input type="number" id="alpha" value="0.05" step="0.01" min="0.001" max="0.5">
+                    <label>显著性水平 α <sl-tooltip content="假阳性率。α=0.05 表示 5% 概率误报。置信区间置信度为 1-α。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
+                    <input type="number" x-model="alpha" step="0.01" min="0.001" max="0.5" :class="{ 'input-error': errors.alpha }" @input="errors.alpha = ''">
                 </div>
                 <div class="form-group">
-                    <label>检验方向 <span class="tooltip" data-tip="双侧：检验是否存在差异（≠）。单侧：检验是否更大（&gt;）或更小（&lt;）。">ⓘ</span></label>
-                    <select id="tail">
+                    <label>检验方向 <sl-tooltip content="双侧：检验是否存在差异（≠）。单侧：检验是否更大（>）或更小（<）。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
+                    <select x-model="tail">
                         <option value="two">双侧检验 (≠)</option>
                         <option value="greater">右侧检验 (&gt;)</option>
                         <option value="less">左侧检验 (&lt;)</option>
                     </select>
                 </div>
                 <div class="form-group">
-                    <label>多重比较校正 <span class="tooltip" data-tip="同时检验多个指标时整体误报率会膨胀。校正后基于校正 p 值判定显著性。Bonferroni 最保守；Holm 检验力更高；BH 控制错误发现率（FDR）。">ⓘ</span></label>
-                    <select id="correction" onchange="updateParamInfo()">
+                    <label>多重比较校正 <sl-tooltip content="同时检验多个指标时整体误报率会膨胀。校正后基于校正 p 值判定显著性。Bonferroni 最保守；Holm 检验力更高；BH 控制错误发现率（FDR）。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
+                    <select x-model="correction">
                         <option value="none">不校正</option>
                         <option value="bonferroni">Bonferroni</option>
                         <option value="holm">Holm-Bonferroni</option>
                         <option value="bh">Benjamini-Hochberg (FDR)</option>
                     </select>
                 </div>
-                <div class="form-group" id="single-baseline-group">
-                    <label>默认基准比例 p₀ <span class="tooltip tip-left" data-tip="单样本检验中，每个指标与该基准比例比较。表格中可对每行单独覆盖。">ⓘ</span></label>
-                    <input type="number" id="default-p0" value="50" step="0.1" min="0" max="100" placeholder="例如: 50">
+                <div class="form-group" x-show="testType === 'single'">
+                    <label>默认基准比例 p₀ <sl-tooltip content="单样本检验中，每个指标与该基准比例比较。表格中可对每行单独覆盖。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></label>
+                    <input type="number" x-model="defaultP0" step="0.1" min="0" max="100" placeholder="例如: 50">
                 </div>
             </div>
-            <div class="info-box" id="param-info"></div>
+            <div class="info-box" x-html="paramInfo"></div>
         </div>
 
         <!-- 数据输入 -->
@@ -131,48 +138,92 @@
             </div>
 
             <div class="data-toolbar">
-                <button class="btn btn-secondary btn-sm" onclick="addRow()">＋ 添加指标</button>
-                <button class="btn btn-secondary btn-sm" onclick="loadSample()">📦 加载示例数据</button>
-                <button class="btn btn-secondary btn-sm" onclick="clearRows()">🗑 清空</button>
+                <button class="btn btn-secondary btn-sm" @click="addRow()">＋ 添加指标</button>
+                <button class="btn btn-secondary btn-sm" @click="loadSample()">📦 加载示例数据</button>
+                <button class="btn btn-secondary btn-sm" @click="clearRows()">🗑 清空</button>
                 <div class="spacer"></div>
-                <button class="btn btn-secondary btn-sm" onclick="downloadTemplate()">⬇ 下载 CSV 模板</button>
+                <button class="btn btn-secondary btn-sm" @click="downloadTemplate()">⬇ 下载 CSV 模板</button>
             </div>
 
             <div class="table-scroll">
                 <table class="data-table">
-                    <thead id="data-thead"></thead>
-                    <tbody id="data-tbody"></tbody>
+                    <thead>
+                        <tr>
+                            <th>指标名称</th>
+                            <th x-show="testType === 'single'">成功数 x</th>
+                            <th x-show="testType === 'single'">样本量 n</th>
+                            <th x-show="testType === 'single'">基准 p₀(%)</th>
+                            <th x-show="testType === 'two'">A 成功数 x₁</th>
+                            <th x-show="testType === 'two'">A 样本量 n₁</th>
+                            <th x-show="testType === 'two'">B 成功数 x₂</th>
+                            <th x-show="testType === 'two'">B 样本量 n₂</th>
+                            <th style="width:48px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="(row, idx) in rows" :key="idx">
+                            <tr>
+                                <td><input type="text" x-model="row.metric" placeholder="例如: 转化率" class="metric-input"></td>
+                                <td x-show="testType === 'single'"><input type="number" x-model="row.x" step="any" min="0" placeholder="860" :class="{ 'input-error': rowErrors[idx]?.x }" @input="delete rowErrors[idx]"></td>
+                                <td x-show="testType === 'single'"><input type="number" x-model="row.n" step="any" min="0" placeholder="2000" :class="{ 'input-error': rowErrors[idx]?.n }" @input="delete rowErrors[idx]"></td>
+                                <td x-show="testType === 'single'"><input type="number" x-model="row.p0" step="any" min="0" placeholder="默认" :class="{ 'input-error': rowErrors[idx]?.p0 }" @input="delete rowErrors[idx]"></td>
+                                <td x-show="testType === 'two'"><input type="number" x-model="row.x1" step="any" min="0" placeholder="1240" :class="{ 'input-error': rowErrors[idx]?.x1 }" @input="delete rowErrors[idx]"></td>
+                                <td x-show="testType === 'two'"><input type="number" x-model="row.n1" step="any" min="0" placeholder="8000" :class="{ 'input-error': rowErrors[idx]?.n1 }" @input="delete rowErrors[idx]"></td>
+                                <td x-show="testType === 'two'"><input type="number" x-model="row.x2" step="any" min="0" placeholder="1456" :class="{ 'input-error': rowErrors[idx]?.x2 }" @input="delete rowErrors[idx]"></td>
+                                <td x-show="testType === 'two'"><input type="number" x-model="row.n2" step="any" min="0" placeholder="8000" :class="{ 'input-error': rowErrors[idx]?.n2 }" @input="delete rowErrors[idx]"></td>
+                                <td><button class="row-del" title="删除" @click="removeRow(idx)">✕</button></td>
+                            </tr>
+                        </template>
+                    </tbody>
                 </table>
             </div>
 
-            <div class="dropzone" id="dropzone">
+            <div class="dropzone" x-ref="dropzone"
+                 @click="$refs.csvFile.click()"
+                 @dragenter.prevent="dropzoneDrag = true"
+                 @dragover.prevent
+                 @dragleave.prevent="dropzoneDrag = false"
+                 @drop.prevent="dropzoneDrag = false; handleDrop($event)"
+                 :class="{ dragover: dropzoneDrag }">
                 点击或拖拽 <strong>.csv</strong> 文件到此处导入
-                <span class="dz-hint" id="dz-hint"></span>
-                <input type="file" id="csv-file" accept=".csv,text/csv" style="display:none;">
+                <span class="dz-hint" x-text="dzHint"></span>
+                <input type="file" x-ref="csvFile" accept=".csv,text/csv" style="display:none" @change="handleFileSelect($event)">
             </div>
-            <div class="csv-status" id="csv-status"></div>
+            <div class="csv-status" :class="csvStatus.cls" x-text="csvStatus.msg"></div>
         </div>
 
         <div class="action-row">
-            <button class="btn btn-secondary" onclick="clearRows()">🔄 重置</button>
-            <button class="btn btn-primary" onclick="runTest()">🧮 运行检验</button>
+            <button class="btn btn-secondary" @click="clearRows()">🔄 重置</button>
+            <button class="btn btn-primary" @click="runTest()">🧮 运行检验</button>
         </div>
 
-        <div class="validation-banner" id="validation-banner" role="alert" aria-live="polite" hidden></div>
+        <!-- 验证错误 -->
+        <div class="validation-banner" role="alert" aria-live="polite" x-show="errorList.length" x-cloak>
+            <template x-for="(msg, i) in errorList" :key="i">
+                <div x-text="'⚠ ' + msg"></div>
+            </template>
+        </div>
 
         <!-- 结果 -->
-        <div class="results-section" id="results">
+        <div class="results-section" :class="{ visible: hasResults }" x-ref="results">
             <div class="card">
                 <div class="card-header">
                     <div class="card-icon purple">📊</div>
-                    <div><div class="card-title">检验结果</div><div class="card-desc" id="result-desc">显著性判定与置信区间</div></div>
+                    <div><div class="card-title">检验结果</div><div class="card-desc" x-text="resultDesc"></div></div>
                 </div>
 
-                <div class="summary-row" id="summary-row"></div>
+                <div class="summary-row" x-show="hasResults">
+                    <template x-for="card in summaryCards" :key="card.label">
+                        <div class="summary-card" :class="card.cls">
+                            <div class="s-label" x-text="card.label"></div>
+                            <div class="s-value" :style="card.style || ''" x-html="card.value"></div>
+                        </div>
+                    </template>
+                </div>
 
                 <h4 class="section-title">森林图 · 效应量与置信区间</h4>
                 <div class="forest-wrap">
-                    <div id="forest"></div>
+                    <div x-ref="forest"></div>
                 </div>
                 <div class="forest-legend">
                     <span class="lg"><span class="dot" style="background:var(--accent-green)"></span>显著（高于基准 / A&gt;B）</span>
@@ -183,22 +234,19 @@
 
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
                     <h4 class="section-title" style="margin:30px 0 18px;">明细</h4>
-                    <button class="btn btn-secondary btn-sm" onclick="downloadResults()">⬇ 下载结果 CSV</button>
+                    <button class="btn btn-secondary btn-sm" @click="downloadResults()">⬇ 下载结果 CSV</button>
                 </div>
                 <div class="table-container">
-                    <table class="results-table"><thead id="res-thead"></thead><tbody id="res-tbody"></tbody></table>
+                    <table class="results-table"><thead x-ref="resThead"></thead><tbody x-ref="resTbody"></tbody></table>
                 </div>
 
-                <div class="formula-display" id="formula"></div>
+                <div class="formula-display" x-ref="formula"></div>
             </div>
         </div>
     </div>
 
 <script>
-let testType = 'single'; // 'single' | 'two'
-let lastRun = null; // 保存最近一次检验结果用于导出
-
-// ====== 示例数据（与下载的 CSV 文件一致） ======
+// ====== 示例数据 ======
 const SAMPLE_SINGLE = [
     { metric: '列表页点击率', x: 3120, n: 4000, p0: 75 },
     { metric: '详情页转化率', x: 860,  n: 2000, p0: 45 },
@@ -215,13 +263,7 @@ const SAMPLE_TWO = [
     { metric: '30日复购率',       x1: 320,  n1: 2000, x2: 260,  n2: 2000 },
     { metric: '订单退款率',       x1: 90,   n1: 2000, x2: 140,  n2: 2000 }
 ];
-
-// ====== GA ======
-function trackEvent(action) {
-    if (typeof gtag !== 'undefined') {
-        gtag('event', action, { 'event_category': 'significance_test', 'event_label': testType });
-    }
-}
+const CORRECTION_NAMES = { none: '不校正', bonferroni: 'Bonferroni', holm: 'Holm-Bonferroni', bh: 'Benjamini-Hochberg (FDR)' };
 
 // ====== 统计核心 ======
 function erf(x) {
@@ -230,7 +272,6 @@ function erf(x) {
     return x >= 0 ? y : -y;
 }
 function normCDF(z) { return 0.5 * (1 + erf(z / Math.SQRT2)); }
-
 function normInv(p) {
     if (p <= 0 || p >= 1) return p <= 0 ? -Infinity : Infinity;
     const a = [-39.69683028665376, 220.9460984245205, -275.9285104469687, 138.357751867269, -30.66479806614716, 2.506628277459239];
@@ -250,15 +291,11 @@ function normInv(p) {
         return -(((((c[0]*q+c[1])*q+c[2])*q+c[3])*q+c[4])*q+c[5]) / ((((d[0]*q+d[1])*q+d[2])*q+d[3])*q+1);
     }
 }
-
 function pValue(z, tail) {
     if (tail === 'greater') return 1 - normCDF(z);
     if (tail === 'less') return normCDF(z);
     return 2 * (1 - normCDF(Math.abs(z)));
 }
-
-// 事后功效（observed power）：以观测效应为真实效应，计算在 α 下检测到该效应的概率
-// d=效应量, seNull=原假设下标准误（决定临界值）, seAlt=备择下标准误（决定抽样分布）
 function calcPower(d, seNull, seAlt, zc, tail) {
     if (!(seAlt > 0)) seAlt = seNull;
     if (!(seAlt > 0)) return NaN;
@@ -268,355 +305,69 @@ function calcPower(d, seNull, seAlt, zc, tail) {
     else pw = normCDF((d - zc * seNull) / seAlt) + normCDF((-d - zc * seNull) / seAlt);
     return Math.min(1, Math.max(0, pw));
 }
-
-// 多重比较校正：返回各指标的校正后 p 值
 function adjustPValues(pvals, method) {
     const m = pvals.length;
     if (m === 0 || method === 'none') return pvals.slice();
     if (method === 'bonferroni') return pvals.map(p => Math.min(1, p * m));
-
-    const idx = pvals.map((p, i) => i).sort((a, b) => pvals[a] - pvals[b]); // 升序索引
+    const idx = pvals.map((p, i) => i).sort((a, b) => pvals[a] - pvals[b]);
     const adj = new Array(m);
     if (method === 'holm') {
         let prev = 0;
-        for (let k = 0; k < m; k++) {
-            const i = idx[k];
-            let val = Math.min(1, (m - k) * pvals[i]);
-            val = Math.max(val, prev); // 保持单调不减
-            adj[i] = val; prev = val;
-        }
+        for (let k = 0; k < m; k++) { const i = idx[k]; let val = Math.min(1, (m - k) * pvals[i]); val = Math.max(val, prev); adj[i] = val; prev = val; }
     } else if (method === 'bh') {
         let prev = 1;
-        for (let k = m - 1; k >= 0; k--) {
-            const i = idx[k];
-            let val = Math.min(1, pvals[i] * m / (k + 1));
-            val = Math.min(val, prev); // 保持单调不增
-            adj[i] = val; prev = val;
-        }
+        for (let k = m - 1; k >= 0; k--) { const i = idx[k]; let val = Math.min(1, pvals[i] * m / (k + 1)); val = Math.min(val, prev); adj[i] = val; prev = val; }
     }
     return adj;
 }
-
-const CORRECTION_NAMES = {
-    none: '不校正', bonferroni: 'Bonferroni', holm: 'Holm-Bonferroni', bh: 'Benjamini-Hochberg (FDR)'
-};
-
-// 单样本 z 比例检验：观测比例 p̂ 与基准 p0 比较
 function testSingle(x, n, p0, alpha, tail) {
     const phat = x / n;
-    const se0 = Math.sqrt(p0 * (1 - p0) / n);          // 原假设下的标准误（用于检验统计量）
-    const seEst = Math.sqrt(phat * (1 - phat) / n);    // 观测标准误（用于置信区间, Wald）
+    const se0 = Math.sqrt(p0 * (1 - p0) / n);
+    const seEst = Math.sqrt(phat * (1 - phat) / n);
     const z = se0 > 0 ? (phat - p0) / se0 : 0;
     const p = pValue(z, tail);
     const zc = normInv(1 - (tail === 'two' ? alpha / 2 : alpha));
-    return {
-        phat, p0, est: phat - p0,
-        ciLow: (phat - p0) - zc * seEst,
-        ciHigh: (phat - p0) + zc * seEst,
-        z, p, se0, seEst, zc,
-        power: calcPower(phat - p0, se0, seEst, zc, tail)
-    };
+    return { phat, p0, est: phat - p0, ciLow: (phat - p0) - zc * seEst, ciHigh: (phat - p0) + zc * seEst, z, p, se0, seEst, zc, power: calcPower(phat - p0, se0, seEst, zc, tail) };
 }
-
-// 双样本 z 比例检验：p̂1 - p̂2
 function testTwo(x1, n1, x2, n2, alpha, tail) {
     const p1 = x1 / n1, p2 = x2 / n2;
     const diff = p1 - p2;
     const pPool = (x1 + x2) / (n1 + n2);
-    const sePool = Math.sqrt(pPool * (1 - pPool) * (1 / n1 + 1 / n2)); // 合并标准误（检验统计量）
-    const seDiff = Math.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2); // 非合并标准误（置信区间）
+    const sePool = Math.sqrt(pPool * (1 - pPool) * (1 / n1 + 1 / n2));
+    const seDiff = Math.sqrt(p1 * (1 - p1) / n1 + p2 * (1 - p2) / n2);
     const z = sePool > 0 ? diff / sePool : 0;
     const p = pValue(z, tail);
     const zc = normInv(1 - (tail === 'two' ? alpha / 2 : alpha));
-    return {
-        p1, p2, est: diff,
-        ciLow: diff - zc * seDiff,
-        ciHigh: diff + zc * seDiff,
-        z, p, pPool, sePool, seDiff, zc,
-        power: calcPower(diff, sePool, seDiff, zc, tail)
-    };
+    return { p1, p2, est: diff, ciLow: diff - zc * seDiff, ciHigh: diff + zc * seDiff, z, p, pPool, sePool, seDiff, zc, power: calcPower(diff, sePool, seDiff, zc, tail) };
 }
 
-// ====== 表格输入 ======
-const COLS = {
-    single: [
-        { key: 'metric', label: '指标名称', type: 'text', ph: '例如: 转化率', cls: 'metric-input' },
-        { key: 'x', label: '成功数 x', type: 'number', ph: '860' },
-        { key: 'n', label: '样本量 n', type: 'number', ph: '2000' },
-        { key: 'p0', label: '基准 p₀(%)', type: 'number', ph: '默认' }
-    ],
-    two: [
-        { key: 'metric', label: '指标名称', type: 'text', ph: '例如: 点击率', cls: 'metric-input' },
-        { key: 'x1', label: 'A 成功数 x₁', type: 'number', ph: '1240' },
-        { key: 'n1', label: 'A 样本量 n₁', type: 'number', ph: '8000' },
-        { key: 'x2', label: 'B 成功数 x₂', type: 'number', ph: '1456' },
-        { key: 'n2', label: 'B 样本量 n₂', type: 'number', ph: '8000' }
-    ]
-};
+// ====== 格式化工具 ======
+function calcOR(pN, pD) { if (pD <= 0 || pD >= 1 || pN <= 0 || pN >= 1) return null; return (pN * (1 - pD)) / (pD * (1 - pN)); }
+function fmtOR(or) { return or === null ? '—' : or.toFixed(3); }
+function orCls(or) { return or === null ? '' : (or > 1 ? 'success-cell' : (or < 1 ? 'warning-cell' : '')); }
+function clip(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function escapeXml(s) { return String(s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c])); }
+function fmtP(p) { return p < 0.0001 ? '<0.0001' : p.toFixed(4); }
+function fmtPower(v) { return isFinite(v) ? (v * 100).toFixed(1) + '%' : '—'; }
+function powerCls(v) { return isFinite(v) && v >= 0.8 ? 'success-cell' : (isFinite(v) && v < 0.5 ? 'warning-cell' : ''); }
+function escapeHtml(s) { return String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])); }
+function colorFor(r) { if (!r.sig) return 'var(--text-muted)'; return r.est > 0 ? 'var(--accent-green)' : 'var(--accent-red)'; }
+function tagFor(r) { if (!r.sig) return '<span class="tag ns">不显著</span>'; return r.est > 0 ? '<span class="tag sig-up">显著↑</span>' : '<span class="tag sig-down">显著↓</span>'; }
 
-function renderHead() {
-    const cols = COLS[testType];
-    document.getElementById('data-thead').innerHTML =
-        '<tr>' + cols.map(c => `<th>${c.label}</th>`).join('') + '<th style="width:48px"></th></tr>';
-}
-
-function makeRow(data = {}) {
-    const cols = COLS[testType];
-    const tr = document.createElement('tr');
-    tr.innerHTML = cols.map(c =>
-        `<td><input type="${c.type}" data-key="${c.key}" class="${c.cls || ''}" placeholder="${c.ph}"
-            ${c.type === 'number' ? 'step="any" min="0"' : ''} value="${data[c.key] != null ? data[c.key] : ''}"></td>`
-    ).join('') + '<td><button class="row-del" title="删除" onclick="this.closest(\'tr\').remove()">✕</button></td>';
-    return tr;
-}
-
-function addRow(data) { document.getElementById('data-tbody').appendChild(makeRow(data)); }
-
-function clearRows() {
-    document.getElementById('data-tbody').innerHTML = '';
-    addRow();
-    document.getElementById('results').classList.remove('visible');
-    setCsvStatus('', '');
-    lastRun = null;
-    clearValidation();
-}
-
-function loadSample() {
-    const data = testType === 'single' ? SAMPLE_SINGLE : SAMPLE_TWO;
-    document.getElementById('data-tbody').innerHTML = '';
-    data.forEach(d => addRow(d));
-    setCsvStatus(`已加载 ${data.length} 行示例数据`, 'ok');
-    runTest();
-}
-
-// ====== CSV 解析 ======
-function parseCSV(text) {
-    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim() !== '');
-    if (!lines.length) return [];
-    const splitLine = l => l.split(',').map(s => s.trim().replace(/^"(.*)"$/, '$1'));
-    const rawHeader = splitLine(lines[0]);
-    const header = rawHeader.map(h => h.toLowerCase());
-
-    // 表头别名映射
-    const alias = {
-        metric: ['metric', 'name', '指标', '指标名称', '名称'],
-        x:  ['x', 'success', 'successes', '成功数', '成功'],
-        n:  ['n', 'total', '样本量', '总数'],
-        p0: ['p0', 'baseline', 'base', '基准', '基准比例'],
-        x1: ['x1', 'xa', 'a_x', '成功数a', 'a成功数', '成功数1'],
-        n1: ['n1', 'na', 'a_n', '样本量a', 'a样本量', '样本量1'],
-        x2: ['x2', 'xb', 'b_x', '成功数b', 'b成功数', '成功数2'],
-        n2: ['n2', 'nb', 'b_n', '样本量b', 'b样本量', '样本量2']
-    };
-    const findIdx = keys => { for (const k of keys) { const i = header.indexOf(k); if (i !== -1) return i; } return -1; };
-
-    const needed = testType === 'single' ? ['metric', 'x', 'n', 'p0'] : ['metric', 'x1', 'n1', 'x2', 'n2'];
-    const idx = {};
-    let headerMatched = false;
-    needed.forEach(k => { idx[k] = findIdx(alias[k]); if (idx[k] !== -1 && k !== 'metric') headerMatched = true; });
-
-    let dataLines = lines;
-    if (headerMatched) {
-        dataLines = lines.slice(1); // 有表头，跳过首行
-    } else {
-        // 无可识别表头 → 按位置解析
-        const order = testType === 'single' ? ['metric', 'x', 'n', 'p0'] : ['metric', 'x1', 'n1', 'x2', 'n2'];
-        order.forEach((k, i) => idx[k] = i);
-        // 若首行看起来像表头（含非数字的数值列）则跳过
-        const firstCells = splitLine(lines[0]);
-        const numKey = testType === 'single' ? idx.x : idx.x1;
-        if (firstCells[numKey] !== undefined && isNaN(parseFloat(firstCells[numKey]))) dataLines = lines.slice(1);
-    }
-
-    const out = [];
-    dataLines.forEach(line => {
-        const cells = splitLine(line);
-        const obj = {};
-        for (const k of needed) {
-            const i = idx[k];
-            obj[k] = (i !== -1 && cells[i] !== undefined) ? cells[i] : '';
-        }
-        out.push(obj);
-    });
-    return out;
-}
-
-function handleCSVText(text, fname) {
-    let rows;
-    try { rows = parseCSV(text); } catch (e) { setCsvStatus('CSV 解析失败：' + e.message, 'err'); return; }
-    if (!rows.length) { setCsvStatus('未在文件中找到有效数据行', 'err'); return; }
-    document.getElementById('data-tbody').innerHTML = '';
-    rows.forEach(r => addRow(r));
-    setCsvStatus(`已从 ${fname || 'CSV'} 导入 ${rows.length} 行数据`, 'ok');
-    runTest();
-}
-
-function setCsvStatus(msg, cls) {
-    const el = document.getElementById('csv-status');
-    el.textContent = msg;
-    el.className = 'csv-status' + (cls ? ' ' + cls : '');
-}
-
-// ====== 运行检验 ======
-function markInputError(input) {
-    if (!input) return;
-    input.classList.add('input-error');
-    input.setAttribute('aria-invalid', 'true');
-}
-
-function clearValidation() {
-    document.querySelectorAll('input.input-error').forEach(inp => {
-        inp.classList.remove('input-error');
-        inp.removeAttribute('aria-invalid');
-    });
-    const banner = document.getElementById('validation-banner');
-    if (banner) { banner.hidden = true; banner.innerHTML = ''; }
-}
-
-function showValidationErrors(errors) {
-    clearValidation();
-    const unique = [];
-    const seen = new Set();
-    for (const err of errors) {
-        if (seen.has(err.message)) continue;
-        seen.add(err.message);
-        unique.push(err);
-    }
-    let firstFocus = null;
-    for (const err of unique) {
-        const els = err.els || (err.el ? [err.el] : (err.id ? [document.getElementById(err.id)] : []));
-        for (const el of els) {
-            if (!el) continue;
-            markInputError(el);
-            if (!firstFocus) firstFocus = el;
-        }
-    }
-    const banner = document.getElementById('validation-banner');
-    if (banner) {
-        banner.hidden = false;
-        banner.innerHTML = unique.map(e => `<div>⚠ ${e.message}</div>`).join('');
-    }
-    document.getElementById('results').classList.remove('visible');
-    const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
-    const target = firstFocus || banner;
-    if (firstFocus) firstFocus.focus({ preventScroll: true });
-    target?.scrollIntoView({ behavior: scrollBehavior, block: 'center' });
-    return false;
-}
-
-/** 与 getRows 一致，但保留每行 DOM 引用以便高亮具体单元格 */
-function getDataRows() {
-    const out = [];
-    document.querySelectorAll('#data-tbody tr').forEach(tr => {
-        const obj = {};
-        const els = {};
-        let hasData = false;
-        tr.querySelectorAll('input').forEach(inp => {
-            const v = inp.value.trim();
-            const key = inp.dataset.key;
-            if (v !== '' && key !== 'metric') hasData = true;
-            obj[key] = v;
-            els[key] = inp;
-        });
-        if (hasData) out.push({ obj, els });
-    });
-    return out;
-}
-
-function runTest() {
-    clearValidation();
-    const alpha = parseFloat(document.getElementById('alpha').value) || 0.05;
-    const tail = document.getElementById('tail').value;
-    const defP0 = (parseFloat(document.getElementById('default-p0').value) || 0) / 100;
-    const dataRows = getDataRows();
-    if (!dataRows.length) return showValidationErrors([{ message: '请先录入或导入至少一行有效数据' }]);
-
-    const results = [];
-    const errors = [];
-    for (let i = 0; i < dataRows.length; i++) {
-        const { obj: r, els } = dataRows[i];
-        const metric = (r.metric && r.metric.trim()) || `指标 ${i + 1}`;
-        if (testType === 'single') {
-            const x = parseFloat(r.x), n = parseFloat(r.n);
-            let p0 = r.p0 !== '' && !isNaN(parseFloat(r.p0)) ? parseFloat(r.p0) / 100 : defP0;
-            if (!(n > 0) || !(x >= 0) || x > n) {
-                errors.push({ els: [els.x, els.n], message: `第 ${i + 1} 行（${metric}）的 x/n 无效：需满足 0 ≤ x ≤ n 且 n>0` });
-                continue;
-            }
-            if (!(p0 > 0 && p0 < 1)) {
-                errors.push({ els: [els.p0], message: `第 ${i + 1} 行（${metric}）的基准比例 p₀ 无效（需在 0-100% 之间）` });
-                continue;
-            }
-            const t = testSingle(x, n, p0, alpha, tail);
-            results.push({ metric, raw: { x, n }, ...t });
-        } else {
-            const x1 = parseFloat(r.x1), n1 = parseFloat(r.n1), x2 = parseFloat(r.x2), n2 = parseFloat(r.n2);
-            if (!(n1 > 0 && n2 > 0) || !(x1 >= 0 && x2 >= 0) || x1 > n1 || x2 > n2) {
-                errors.push({ els: [els.x1, els.n1, els.x2, els.n2], message: `第 ${i + 1} 行（${metric}）的样本数据无效：需满足 0 ≤ x ≤ n 且 n>0` });
-                continue;
-            }
-            const t = testTwo(x1, n1, x2, n2, alpha, tail);
-            results.push({ metric, raw: { x1, n1, x2, n2 }, ...t });
-        }
-    }
-
-    if (errors.length) return showValidationErrors(errors);
-    // 多重比较校正：基于校正后 p 值判定显著性
-    const correction = document.getElementById('correction').value;
-    const pAdj = adjustPValues(results.map(r => r.p), correction);
-    const corrected = correction !== 'none';
-    results.forEach((r, i) => { r.pAdj = pAdj[i]; r.corrected = corrected; r.sig = pAdj[i] < alpha; });
-
-    lastRun = { results, alpha, tail, correction, testType };
-    renderSummary(results, alpha);
-    renderForest(results);
-    renderTable(results, alpha, tail);
-    renderFormula(alpha, tail);
-    document.getElementById('result-desc').textContent =
-        (testType === 'single' ? '单样本' : '双样本') + ` z 比例检验 · ${results.length} 个指标 · 置信度 ${((1 - alpha) * 100).toFixed(0)}%`
-        + (correction !== 'none' ? ` · ${CORRECTION_NAMES[correction]} 校正` : '');
-    document.getElementById('results').classList.add('visible');
-    document.getElementById('results').scrollIntoView({ behavior: 'smooth', block: 'start' });
-    trackEvent('run_test');
-}
-
-function renderSummary(results, alpha) {
-    const total = results.length;
-    const sig = results.filter(r => r.sig).length;
-    const up = results.filter(r => r.sig && r.est > 0).length;
-    const down = results.filter(r => r.sig && r.est < 0).length;
-    document.getElementById('summary-row').innerHTML = `
-        <div class="summary-card"><div class="s-label">指标总数</div><div class="s-value">${total}</div></div>
-        <div class="summary-card sig"><div class="s-label">显著</div><div class="s-value">${sig}</div></div>
-        <div class="summary-card nsig"><div class="s-label">不显著</div><div class="s-value">${total - sig}</div></div>
-        <div class="summary-card"><div class="s-label">↑ 升 / ↓ 降</div><div class="s-value" style="font-size:1.4rem;">
-            <span style="color:var(--accent-green)">${up}</span> / <span style="color:var(--accent-red)">${down}</span></div></div>`;
-}
-
-function colorFor(r) {
-    if (!r.sig) return 'var(--text-muted)';
-    return r.est > 0 ? 'var(--accent-green)' : 'var(--accent-red)';
-}
-
-// ====== 纵向森林图（SVG） ======
-function renderForest(results) {
+// ====== 渲染函数（命令式，通过 $refs 注入） ======
+function renderForest(results, testType) {
     const rowH = 46, padTop = 44, padBottom = 52;
     const W = 860, labelW = 196, valW = 156;
     const plotLeft = labelW, plotRight = W - valW, plotW = plotRight - plotLeft;
     const H = padTop + results.length * rowH + padBottom;
-
-    // x 轴定义域
     let vals = [0];
     results.forEach(r => vals.push(r.ciLow, r.ciHigh, r.est));
     let dmin = Math.min(...vals), dmax = Math.max(...vals);
     if (dmin === dmax) { dmin -= 0.01; dmax += 0.01; }
     const sp = dmax - dmin; dmin -= sp * 0.12; dmax += sp * 0.12;
     const X = v => plotLeft + (v - dmin) / (dmax - dmin) * plotW;
-
     const axisY = padTop + results.length * rowH + 8;
     let svg = `<svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="xMidYMid meet" font-family="JetBrains Mono, monospace">`;
-
-    // 网格 & x 轴刻度
     const ticks = 5;
     for (let i = 0; i <= ticks; i++) {
         const v = dmin + (dmax - dmin) * i / ticks;
@@ -626,288 +377,399 @@ function renderForest(results) {
     }
     svg += `<line x1="${plotLeft}" y1="${axisY}" x2="${plotRight}" y2="${axisY}" stroke="#2a3441" stroke-width="1"/>`;
     svg += `<text x="${(plotLeft + plotRight) / 2}" y="${axisY + 40}" fill="#9ca3af" font-size="12" text-anchor="middle" font-family="Noto Sans SC, sans-serif">${testType === 'single' ? '观测比例 − 基准比例 (p̂ − p₀)' : '组间差异 (A − B)'}</text>`;
-
-    // 基准线（0）
     const zx = X(0);
     svg += `<line x1="${zx}" y1="${padTop - 10}" x2="${zx}" y2="${axisY}" stroke="#6b7280" stroke-width="1.5" stroke-dasharray="5,4"/>`;
-
-    // 每行
     results.forEach((r, i) => {
         const cy = padTop + i * rowH + rowH / 2;
         const col = colorFor(r);
         const lo = X(r.ciLow), hi = X(r.ciHigh), pe = X(r.est);
-
-        // 指标名（左）
         svg += `<text x="${plotLeft - 14}" y="${cy + 4}" fill="#e8eaed" font-size="12.5" text-anchor="end" font-family="Noto Sans SC, sans-serif">${escapeXml(clip(r.metric, 12))}</text>`;
-        // CI 横线 + 端帽
         svg += `<line x1="${lo}" y1="${cy}" x2="${hi}" y2="${cy}" stroke="${col}" stroke-width="2.5" opacity="0.85"/>`;
         svg += `<line x1="${lo}" y1="${cy - 6}" x2="${lo}" y2="${cy + 6}" stroke="${col}" stroke-width="2"/>`;
         svg += `<line x1="${hi}" y1="${cy - 6}" x2="${hi}" y2="${cy + 6}" stroke="${col}" stroke-width="2"/>`;
-        // 点估计标记
         svg += `<circle cx="${pe}" cy="${cy}" r="6" fill="${col}" stroke="#0a0e14" stroke-width="1.5"><title>${escapeXml(r.metric)}: ${(r.est*100).toFixed(2)}% [${(r.ciLow*100).toFixed(2)}%, ${(r.ciHigh*100).toFixed(2)}%], p=${fmtP(r.p)}${r.corrected ? ', 校正后 p=' + fmtP(r.pAdj) : ''}, 功效=${fmtPower(r.power)}</title></circle>`;
-        // 右侧数值（有校正时显示校正后 p，记为 p*）
         const pShown = r.corrected ? r.pAdj : r.p;
         const txt = `${r.est >= 0 ? '+' : ''}${(r.est * 100).toFixed(2)}%  ${r.corrected ? 'p*' : 'p'}=${fmtP(pShown)}`;
         svg += `<text x="${plotRight + 12}" y="${cy + 4}" fill="${r.sig ? col : '#9ca3af'}" font-size="11.5" text-anchor="start">${txt}</text>`;
     });
-
     svg += `</svg>`;
-    document.getElementById('forest').innerHTML = svg;
+    return svg;
 }
 
-function calcOR(pNumerator, pDenominator) {
-    if (pDenominator <= 0 || pDenominator >= 1 || pNumerator <= 0 || pNumerator >= 1) return null;
-    return (pNumerator * (1 - pDenominator)) / (pDenominator * (1 - pNumerator));
-}
-function fmtOR(or) { return or === null ? '—' : or.toFixed(3); }
-function orCls(or) { return or === null ? '' : (or > 1 ? 'success-cell' : (or < 1 ? 'warning-cell' : '')); }
-
-function clip(s, n) { return s.length > n ? s.slice(0, n - 1) + '…' : s; }
-function escapeXml(s) { return String(s).replace(/[<>&"']/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c])); }
-function fmtP(p) { return p < 0.0001 ? '<0.0001' : p.toFixed(4); }
-function fmtPower(v) { return isFinite(v) ? (v * 100).toFixed(1) + '%' : '—'; }
-function powerCls(v) { return isFinite(v) && v >= 0.8 ? 'success-cell' : (isFinite(v) && v < 0.5 ? 'warning-cell' : ''); }
-
-function renderTable(results, alpha, tail) {
+function renderTableHTML(results, alpha, tail, testType) {
     const ciLabel = `${((1 - alpha) * 100).toFixed(0)}% CI`;
     const corrected = results.length && results[0].corrected;
     const adjHead = corrected ? '<th>校正后 p</th>' : '';
     const adjCell = r => corrected ? `<td>${fmtP(r.pAdj)}</td>` : '';
-    const pwHead = '<th>事后功效 <span class="tooltip tip-left tip-bottom" data-tip="observed power：以观测效应为真实效应，在当前样本量与 α 下检测到该效应的概率。⚠️ 注意：事后功效由 p 值唯一确定，不提供额外信息——p 值显著时功效必然高，反之必然低（Hoenig &amp; Heisey, 2001）。">ⓘ</span></th>';
+    const pwHead = '<th>事后功效 <sl-tooltip content="observed power：以观测效应为真实效应，在当前样本量与 α 下检测到该效应的概率。⚠️ 注意：事后功效由 p 值唯一确定，不提供额外信息——p 值显著时功效必然高，反之必然低（Hoenig &amp; Heisey, 2001）。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></th>';
     const pwCell = r => `<td class="${powerCls(r.power)}">${fmtPower(r.power)}</td>`;
-    const orHead = '<th>OR <span class="tooltip tip-left tip-bottom" data-tip="比值比（Odds Ratio）：衡量两组事件发生的优势之比。单样本：OR = (p̂÷(1−p̂)) ÷ (p₀÷(1−p₀))；双样本：OR = (p₂÷(1−p₂)) ÷ (p₁÷(1−p₁))。OR=1 无差异，OR&gt;1 绿色（正向），OR&lt;1 橙色（负向）。p 较小时 OR≈RR；p 较大时 OR 会高估相对差异。">ⓘ</span></th>';
+    const orHead = '<th>OR <sl-tooltip content="比值比（Odds Ratio）：衡量两组事件发生的优势之比。单样本：OR = (p̂÷(1−p̂)) ÷ (p₀÷(1−p₀))；双样本：OR = (p₂÷(1−p₂)) ÷ (p₁÷(1−p₁))。OR=1 无差异，OR&gt;1 绿色（正向），OR&lt;1 橙色（负向）。p 较小时 OR≈RR；p 较大时 OR 会高估相对差异。" style="--max-width: 260px;"><span class="tip-icon">ⓘ</span></sl-tooltip></th>';
     const orCellSingle = r => { const or = calcOR(r.phat, r.p0); return `<td class="${orCls(or)}">${fmtOR(or)}</td>`; };
     const orCellTwo = r => { const or = calcOR(r.p2, r.p1); return `<td class="${orCls(or)}">${fmtOR(or)}</td>`; };
+    let thead, tbody;
     if (testType === 'single') {
-        document.getElementById('res-thead').innerHTML =
-            `<tr><th>指标</th><th>观测 p̂</th><th>基准 p₀</th><th>差异</th><th>${ciLabel}</th>${orHead}<th>z 值</th><th>p 值</th>${adjHead}${pwHead}<th>结论</th></tr>`;
-        document.getElementById('res-tbody').innerHTML = results.map(r => {
-            return `<tr>
-                <td class="metric-cell">${escapeHtml(r.metric)}</td>
-                <td>${(r.phat * 100).toFixed(2)}%</td>
-                <td>${(r.p0 * 100).toFixed(2)}%</td>
-                <td>${r.est >= 0 ? '+' : ''}${(r.est * 100).toFixed(2)}%</td>
-                <td>[${(r.ciLow * 100).toFixed(2)}%, ${(r.ciHigh * 100).toFixed(2)}%]</td>
-                ${orCellSingle(r)}
-                <td>${r.z.toFixed(3)}</td>
-                <td>${fmtP(r.p)}</td>
-                ${adjCell(r)}
-                ${pwCell(r)}
-                <td>${tagFor(r)}</td>
-            </tr>`;
-        }).join('');
+        thead = `<tr><th>指标</th><th>观测 p̂</th><th>基准 p₀</th><th>差异</th><th>${ciLabel}</th>${orHead}<th>z 值</th><th>p 值</th>${adjHead}${pwHead}<th>结论</th></tr>`;
+        tbody = results.map(r => `<tr><td class="metric-cell">${escapeHtml(r.metric)}</td><td>${(r.phat * 100).toFixed(2)}%</td><td>${(r.p0 * 100).toFixed(2)}%</td><td>${r.est >= 0 ? '+' : ''}${(r.est * 100).toFixed(2)}%</td><td>[${(r.ciLow * 100).toFixed(2)}%, ${(r.ciHigh * 100).toFixed(2)}%]</td>${orCellSingle(r)}<td>${r.z.toFixed(3)}</td><td>${fmtP(r.p)}</td>${adjCell(r)}${pwCell(r)}<td>${tagFor(r)}</td></tr>`).join('');
     } else {
-        document.getElementById('res-thead').innerHTML =
-            `<tr><th>指标</th><th>A 比例</th><th>B 比例</th><th>差异(A−B)</th><th>${ciLabel}</th>${orHead}<th>z 值</th><th>p 值</th>${adjHead}${pwHead}<th>结论</th></tr>`;
-        document.getElementById('res-tbody').innerHTML = results.map(r => {
-            return `<tr>
-                <td class="metric-cell">${escapeHtml(r.metric)}</td>
-                <td>${(r.p1 * 100).toFixed(2)}%</td>
-                <td>${(r.p2 * 100).toFixed(2)}%</td>
-                <td>${r.est >= 0 ? '+' : ''}${(r.est * 100).toFixed(2)}%</td>
-                <td>[${(r.ciLow * 100).toFixed(2)}%, ${(r.ciHigh * 100).toFixed(2)}%]</td>
-                ${orCellTwo(r)}
-                <td>${r.z.toFixed(3)}</td>
-                <td>${fmtP(r.p)}</td>
-                ${adjCell(r)}
-                ${pwCell(r)}
-                <td>${tagFor(r)}</td>
-            </tr>`;
-        }).join('');
+        thead = `<tr><th>指标</th><th>A 比例</th><th>B 比例</th><th>差异(A−B)</th><th>${ciLabel}</th>${orHead}<th>z 值</th><th>p 值</th>${adjHead}${pwHead}<th>结论</th></tr>`;
+        tbody = results.map(r => `<tr><td class="metric-cell">${escapeHtml(r.metric)}</td><td>${(r.p1 * 100).toFixed(2)}%</td><td>${(r.p2 * 100).toFixed(2)}%</td><td>${r.est >= 0 ? '+' : ''}${(r.est * 100).toFixed(2)}%</td><td>[${(r.ciLow * 100).toFixed(2)}%, ${(r.ciHigh * 100).toFixed(2)}%]</td>${orCellTwo(r)}<td>${r.z.toFixed(3)}</td><td>${fmtP(r.p)}</td>${adjCell(r)}${pwCell(r)}<td>${tagFor(r)}</td></tr>`).join('');
     }
+    return { thead, tbody };
 }
 
-function tagFor(r) {
-    if (!r.sig) return '<span class="tag ns">不显著</span>';
-    return r.est > 0 ? '<span class="tag sig-up">显著↑</span>' : '<span class="tag sig-down">显著↓</span>';
-}
-function escapeHtml(s) { return String(s).replace(/[<>&]/g, c => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;' }[c])); }
-
-function renderFormula(alpha, tail) {
+function renderFormulaHTML(alpha, tail, testType, correction) {
     const tailTxt = { two: '双侧', greater: '右侧', less: '左侧' }[tail];
-    const correction = document.getElementById('correction').value;
     const pTxt = tail === 'two' ? '2 × [1 − Φ(|z|)]' : (tail === 'greater' ? '1 − Φ(z)' : 'Φ(z)');
     const sigTxt = correction === 'none' ? '当 p &lt; α 时认为显著' : '当<strong>校正后 p</strong> &lt; α 时认为显著';
     let html;
     if (testType === 'single') {
-        html = `<strong>单样本 z 比例检验</strong>（${tailTxt}，α=${alpha}）<br>
-            检验统计量：z = (p̂ − p₀) / √(p₀(1−p₀)/n)<br>
-            置信区间（Wald）：(p̂ − p₀) ± Z<sub>${tail === 'two' ? 'α/2' : 'α'}</sub> × √(p̂(1−p̂)/n)<br>
-            p 值：${pTxt}；${sigTxt}`;
+        html = `<strong>单样本 z 比例检验</strong>（${tailTxt}，α=${alpha}）<br>检验统计量：z = (p̂ − p₀) / √(p₀(1−p₀)/n)<br>置信区间（Wald）：(p̂ − p₀) ± Z<sub>${tail === 'two' ? 'α/2' : 'α'}</sub> × √(p̂(1−p̂)/n)<br>p 值：${pTxt}；${sigTxt}`;
     } else {
-        html = `<strong>双样本 z 比例检验</strong>（${tailTxt}，α=${alpha}）<br>
-            合并比例：p̄ = (x₁ + x₂) / (n₁ + n₂)<br>
-            检验统计量：z = (p̂₁ − p̂₂) / √(p̄(1−p̄)(1/n₁ + 1/n₂))<br>
-            置信区间：(p̂₁ − p̂₂) ± Z<sub>${tail === 'two' ? 'α/2' : 'α'}</sub> × √(p̂₁(1−p̂₁)/n₁ + p̂₂(1−p̂₂)/n₂)<br>
-            p 值：${pTxt}；${sigTxt}`;
+        html = `<strong>双样本 z 比例检验</strong>（${tailTxt}，α=${alpha}）<br>合并比例：p̄ = (x₁ + x₂) / (n₁ + n₂)<br>检验统计量：z = (p̂₁ − p̂₂) / √(p̄(1−p̄)(1/n₁ + 1/n₂))<br>置信区间：(p̂₁ − p̂₂) ± Z<sub>${tail === 'two' ? 'α/2' : 'α'}</sub> × √(p̂₁(1−p̂₁)/n₁ + p̂₂(1−p̂₂)/n₂)<br>p 值：${pTxt}；${sigTxt}`;
     }
-    html += `<br><strong>事后功效 (observed power, 1−β)</strong><br>
-        以观测效应为真实效应，在当前样本量与 α 下检测到该效应的概率。功效偏低时，不显著的结果更可能源于样本量不足而非确无效应。<br>
-        <span style="color:var(--accent-orange);font-size:0.88em;">⚠️ 注意：事后功效由 p 值唯一确定，不提供超出 p 值的额外信息（Hoenig &amp; Heisey, 2001）——p 值显著时事后功效必然高，反之亦然。建议将此列视为参考，而非独立解读。</span>`;
-    html += correctionFormula(correction);
-    document.getElementById('formula').innerHTML = html;
+    html += `<br><strong>事后功效 (observed power, 1−β)</strong><br>以观测效应为真实效应，在当前样本量与 α 下检测到该效应的概率。功效偏低时，不显著的结果更可能源于样本量不足而非确无效应。<br><span style="color:var(--accent-orange);font-size:0.88em;">⚠️ 注意：事后功效由 p 值唯一确定，不提供超出 p 值的额外信息（Hoenig &amp; Heisey, 2001）——p 值显著时事后功效必然高，反之亦然。建议将此列视为参考，而非独立解读。</span>`;
+    if (correction !== 'none') {
+        const desc = { bonferroni: 'Bonferroni：p<sub>校正</sub> = min(1, m × p)，m 为指标数。最保守，控制整体误报率 FWER ≤ α。', holm: 'Holm-Bonferroni：将 p 值升序排列，第 k 小者乘以 (m − k + 1) 并保持单调。控制 FWER，且检验力高于 Bonferroni。', bh: 'Benjamini-Hochberg：将 p 值升序排列，第 k 小者乘以 m/k 并保持单调。控制错误发现率 FDR ≤ α，适合多指标探索。' }[correction];
+        html += `<br><strong>多重比较校正 · ${CORRECTION_NAMES[correction]}</strong><br>${desc}`;
+    }
+    return html;
 }
 
-function correctionFormula(method) {
-    if (method === 'none') return '';
-    const desc = {
-        bonferroni: 'Bonferroni：p<sub>校正</sub> = min(1, m × p)，m 为指标数。最保守，控制整体误报率 FWER ≤ α。',
-        holm: 'Holm-Bonferroni：将 p 值升序排列，第 k 小者乘以 (m − k + 1) 并保持单调。控制 FWER，且检验力高于 Bonferroni。',
-        bh: 'Benjamini-Hochberg：将 p 值升序排列，第 k 小者乘以 m/k 并保持单调。控制错误发现率 FDR ≤ α，适合多指标探索。'
-    }[method];
-    return `<br><strong>多重比较校正 · ${CORRECTION_NAMES[method]}</strong><br>${desc}`;
+// ====== CSV 解析 ======
+function parseCSV(text, testType) {
+    const lines = text.replace(/\r\n/g, '\n').replace(/\r/g, '\n').split('\n').filter(l => l.trim() !== '');
+    if (!lines.length) return [];
+    const splitLine = l => l.split(',').map(s => s.trim().replace(/^"(.*)"$/, '$1'));
+    const rawHeader = splitLine(lines[0]);
+    const header = rawHeader.map(h => h.toLowerCase());
+    const alias = { metric: ['metric', 'name', '指标', '指标名称', '名称'], x: ['x', 'success', 'successes', '成功数', '成功'], n: ['n', 'total', '样本量', '总数'], p0: ['p0', 'baseline', 'base', '基准', '基准比例'], x1: ['x1', 'xa', 'a_x', '成功数a', 'a成功数', '成功数1'], n1: ['n1', 'na', 'a_n', '样本量a', 'a样本量', '样本量1'], x2: ['x2', 'xb', 'b_x', '成功数b', 'b成功数', '成功数2'], n2: ['n2', 'nb', 'b_n', '样本量b', 'b样本量', '样本量2'] };
+    const findIdx = keys => { for (const k of keys) { const i = header.indexOf(k); if (i !== -1) return i; } return -1; };
+    const needed = testType === 'single' ? ['metric', 'x', 'n', 'p0'] : ['metric', 'x1', 'n1', 'x2', 'n2'];
+    const idx = {};
+    let headerMatched = false;
+    needed.forEach(k => { idx[k] = findIdx(alias[k]); if (idx[k] !== -1 && k !== 'metric') headerMatched = true; });
+    let dataLines = lines;
+    if (headerMatched) {
+        dataLines = lines.slice(1);
+    } else {
+        const order = testType === 'single' ? ['metric', 'x', 'n', 'p0'] : ['metric', 'x1', 'n1', 'x2', 'n2'];
+        order.forEach((k, i) => idx[k] = i);
+        const firstCells = splitLine(lines[0]);
+        const numKey = testType === 'single' ? idx.x : idx.x1;
+        if (firstCells[numKey] !== undefined && isNaN(parseFloat(firstCells[numKey]))) dataLines = lines.slice(1);
+    }
+    const out = [];
+    dataLines.forEach(line => {
+        const cells = splitLine(line);
+        const obj = {};
+        for (const k of needed) { const i = idx[k]; obj[k] = (i !== -1 && cells[i] !== undefined) ? cells[i] : ''; }
+        out.push(obj);
+    });
+    return out;
 }
 
-// ====== 结果导出 ======
-function csvCell(v) {
-    const s = String(v);
-    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+// ====== GA ======
+function trackEvent(action) {
+    if (typeof gtag !== 'undefined') gtag('event', action, { 'event_category': 'significance_test' });
 }
+
+// ====== CSV 导出 ======
+function csvCell(v) { const s = String(v); return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s; }
 function saveCsv(rows, fname) {
     const csv = rows.map(r => r.map(csvCell).join(',')).join('\r\n') + '\r\n';
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = fname; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = fname; a.click();
     URL.revokeObjectURL(url);
 }
 
-function downloadResults() {
-    if (!lastRun || !lastRun.results.length) { return showValidationErrors([{ message: '请先运行检验后再下载结果' }]); }
-    const { results, alpha, tail, correction, testType: tt } = lastRun;
-    const tailTxt = { two: '双侧', greater: '右侧', less: '左侧' }[tail];
-    const ciPct = ((1 - alpha) * 100).toFixed(0);
-    const corrected = correction !== 'none';
-    const pct = v => (v * 100).toFixed(2) + '%';
-    const sigTxt = r => r.sig ? (r.est > 0 ? '显著↑' : '显著↓') : '不显著';
+// ====== Alpine 工厂函数 ======
+function significanceTest() {
+    return {
+        testType: 'single',
+        alpha: '0.05',
+        tail: 'two',
+        correction: 'none',
+        defaultP0: '50',
+        rows: [{ metric: '', x: '', n: '', p0: '', x1: '', n1: '', x2: '', n2: '' }],
+        errors: {},
+        errorList: [],
+        rowErrors: {},
+        hasResults: false,
+        csvStatus: { msg: '', cls: '' },
+        lastRun: null,
+        dropzoneDrag: false,
 
-    const rows = [];
-    if (tt === 'single') {
-        const head = ['指标', '成功数x', '样本量n', '观测比例p_hat', '基准p0', '差异', `CI下限(${ciPct}%)`, `CI上限(${ciPct}%)`, 'OR', 'z值', 'p值'];
-        if (corrected) head.push('校正后p');
-        head.push('事后功效');
-        head.push('结论');
-        rows.push(head);
-        results.forEach(r => {
-            const or = calcOR(r.phat, r.p0);
-            const row = [r.metric, r.raw.x, r.raw.n, pct(r.phat), pct(r.p0), pct(r.est), pct(r.ciLow), pct(r.ciHigh), fmtOR(or), r.z.toFixed(4), r.p.toExponential(4)];
-            if (corrected) row.push(r.pAdj.toExponential(4));
-            row.push(fmtPower(r.power));
-            row.push(sigTxt(r));
-            rows.push(row);
-        });
-    } else {
-        const head = ['指标', 'A成功数x1', 'A样本量n1', 'B成功数x2', 'B样本量n2', 'A比例', 'B比例', '差异(A-B)', `CI下限(${ciPct}%)`, `CI上限(${ciPct}%)`, 'OR(B/A)', 'z值', 'p值'];
-        if (corrected) head.push('校正后p');
-        head.push('事后功效');
-        head.push('结论');
-        rows.push(head);
-        results.forEach(r => {
-            const or = calcOR(r.p2, r.p1);
-            const row = [r.metric, r.raw.x1, r.raw.n1, r.raw.x2, r.raw.n2, pct(r.p1), pct(r.p2), pct(r.est), pct(r.ciLow), pct(r.ciHigh), fmtOR(or), r.z.toFixed(4), r.p.toExponential(4)];
-            if (corrected) row.push(r.pAdj.toExponential(4));
-            row.push(fmtPower(r.power));
-            row.push(sigTxt(r));
-            rows.push(row);
-        });
-    }
+        get paramInfo() {
+            let base;
+            if (this.testType === 'single') {
+                base = '<strong>💡 单样本检验：</strong>将每个指标的观测比例 p̂ = x/n 与基准比例 p₀ 比较，判断差异是否显著。CSV 列：<code>metric, x, n, p0</code>（p₀ 为百分数，可留空使用默认值）。';
+            } else {
+                base = '<strong>💡 双样本检验：</strong>比较两组（A/B）独立比例 p̂₁、p̂₂ 是否存在显著差异。CSV 列：<code>metric, x1, n1, x2, n2</code>。';
+            }
+            if (this.correction !== 'none') {
+                base += `<br><strong>🔬 已启用 ${CORRECTION_NAMES[this.correction]} 校正：</strong>多指标同时检验时整体误报率会膨胀，将基于<strong>校正后 p 值</strong>判定显著性。`;
+            }
+            return base;
+        },
 
-    // 元信息行（便于追溯检验设置）
-    rows.push([]);
-    rows.push(['# 检验类型', tt === 'single' ? '单样本z比例检验' : '双样本z比例检验']);
-    rows.push(['# 显著性水平α', alpha]);
-    rows.push(['# 检验方向', tailTxt]);
-    rows.push(['# 置信度', ciPct + '%']);
-    rows.push(['# 多重比较校正', CORRECTION_NAMES[correction]]);
-    rows.push(['# 导出时间', new Date().toLocaleString('zh-CN')]);
+        get dzHint() {
+            return this.testType === 'single' ? '列格式：metric, x, n, p0' : '列格式：metric, x1, n1, x2, n2';
+        },
 
-    const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '').replace(/-/g, '');
-    saveCsv(rows, `significance-result-${tt}-${stamp}.csv`);
-    trackEvent('download_result');
+        get resultDesc() {
+            if (!this.lastRun) return '显著性判定与置信区间';
+            const { results, alpha, correction, testType: tt } = this.lastRun;
+            return (tt === 'single' ? '单样本' : '双样本') + ` z 比例检验 · ${results.length} 个指标 · 置信度 ${((1 - alpha) * 100).toFixed(0)}%` + (correction !== 'none' ? ` · ${CORRECTION_NAMES[correction]} 校正` : '');
+        },
+
+        get summaryCards() {
+            if (!this.lastRun) return [];
+            const results = this.lastRun.results;
+            const total = results.length;
+            const sig = results.filter(r => r.sig).length;
+            const up = results.filter(r => r.sig && r.est > 0).length;
+            const down = results.filter(r => r.sig && r.est < 0).length;
+            return [
+                { label: '指标总数', value: String(total), cls: '' },
+                { label: '显著', value: String(sig), cls: 'sig' },
+                { label: '不显著', value: String(total - sig), cls: 'nsig' },
+                { label: '↑ 升 / ↓ 降', value: `<span style="color:var(--accent-green)">${up}</span> / <span style="color:var(--accent-red)">${down}</span>`, cls: '', style: 'font-size:1.4rem' },
+            ];
+        },
+
+        init() {
+            this.$nextTick(() => {
+                this.$refs.results.classList.remove('visible');
+            });
+        },
+
+        switchTest(t) {
+            this.testType = t;
+            this.clearRows();
+        },
+
+        addRow(data = {}) {
+            this.rows.push({
+                metric: data.metric || '',
+                x: data.x != null ? String(data.x) : '',
+                n: data.n != null ? String(data.n) : '',
+                p0: data.p0 != null ? String(data.p0) : '',
+                x1: data.x1 != null ? String(data.x1) : '',
+                n1: data.n1 != null ? String(data.n1) : '',
+                x2: data.x2 != null ? String(data.x2) : '',
+                n2: data.n2 != null ? String(data.n2) : '',
+            });
+        },
+
+        removeRow(idx) {
+            if (this.rows.length > 1) this.rows.splice(idx, 1);
+        },
+
+        clearRows() {
+            this.rows = [{ metric: '', x: '', n: '', p0: '', x1: '', n1: '', x2: '', n2: '' }];
+            this.hasResults = false;
+            this.csvStatus = { msg: '', cls: '' };
+            this.lastRun = null;
+            this.errors = {};
+            this.errorList = [];
+            this.rowErrors = {};
+        },
+
+        loadSample() {
+            const data = this.testType === 'single' ? SAMPLE_SINGLE : SAMPLE_TWO;
+            this.rows = data.map(d => ({
+                metric: d.metric,
+                x: d.x != null ? String(d.x) : '',
+                n: d.n != null ? String(d.n) : '',
+                p0: d.p0 != null ? String(d.p0) : '',
+                x1: d.x1 != null ? String(d.x1) : '',
+                n1: d.n1 != null ? String(d.n1) : '',
+                x2: d.x2 != null ? String(d.x2) : '',
+                n2: d.n2 != null ? String(d.n2) : '',
+            }));
+            this.csvStatus = { msg: `已加载 ${data.length} 行示例数据`, cls: 'ok' };
+            this.$nextTick(() => this.runTest());
+        },
+
+        runTest() {
+            this.errors = {};
+            this.errorList = [];
+            this.rowErrors = {};
+            const alpha = parseFloat(this.alpha) || 0.05;
+            const tail = this.tail;
+            const defP0 = (parseFloat(this.defaultP0) || 0) / 100;
+
+            const dataRows = this.rows.filter(row => {
+                if (this.testType === 'single') return row.x !== '' || row.n !== '';
+                return row.x1 !== '' || row.n1 !== '' || row.x2 !== '' || row.n2 !== '';
+            });
+
+            if (!dataRows.length) { this.errorList = ['请先录入或导入至少一行有效数据']; return; }
+
+            const results = [];
+            const list = [];
+            let firstErrIdx = -1;
+
+            for (let i = 0; i < dataRows.length; i++) {
+                const r = dataRows[i];
+                const metric = (r.metric && r.metric.trim()) || `指标 ${i + 1}`;
+                if (this.testType === 'single') {
+                    const x = parseFloat(r.x), n = parseFloat(r.n);
+                    let p0 = r.p0 !== '' && !isNaN(parseFloat(r.p0)) ? parseFloat(r.p0) / 100 : defP0;
+                    if (!(n > 0) || !(x >= 0) || x > n) {
+                        list.push(`第 ${i + 1} 行（${metric}）的 x/n 无效：需满足 0 ≤ x ≤ n 且 n>0`);
+                        if (firstErrIdx === -1) firstErrIdx = i;
+                        this.rowErrors[i] = { x: true, n: true };
+                        continue;
+                    }
+                    if (!(p0 > 0 && p0 < 1)) {
+                        list.push(`第 ${i + 1} 行（${metric}）的基准比例 p₀ 无效（需在 0-100% 之间）`);
+                        if (firstErrIdx === -1) firstErrIdx = i;
+                        this.rowErrors[i] = { p0: true };
+                        continue;
+                    }
+                    results.push({ metric, raw: { x, n }, ...testSingle(x, n, p0, alpha, tail) });
+                } else {
+                    const x1 = parseFloat(r.x1), n1 = parseFloat(r.n1), x2 = parseFloat(r.x2), n2 = parseFloat(r.n2);
+                    if (!(n1 > 0 && n2 > 0) || !(x1 >= 0 && x2 >= 0) || x1 > n1 || x2 > n2) {
+                        list.push(`第 ${i + 1} 行（${metric}）的样本数据无效：需满足 0 ≤ x ≤ n 且 n>0`);
+                        if (firstErrIdx === -1) firstErrIdx = i;
+                        this.rowErrors[i] = { x1: true, n1: true, x2: true, n2: true };
+                        continue;
+                    }
+                    results.push({ metric, raw: { x1, n1, x2, n2 }, ...testTwo(x1, n1, x2, n2, alpha, tail) });
+                }
+            }
+
+            if (list.length) {
+                this.errorList = list;
+                this.$nextTick(() => {
+                    const banner = this.$el.querySelector('.validation-banner');
+                    const scrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth';
+                    const target = banner || this.$el;
+                    target?.scrollIntoView({ behavior: scrollBehavior, block: 'center' });
+                });
+                return;
+            }
+
+            const pAdj = adjustPValues(results.map(r => r.p), this.correction);
+            const corrected = this.correction !== 'none';
+            results.forEach((r, i) => { r.pAdj = pAdj[i]; r.corrected = corrected; r.sig = pAdj[i] < alpha; });
+
+            this.lastRun = { results, alpha, tail, correction: this.correction, testType: this.testType };
+            this.hasResults = true;
+
+            this.$nextTick(() => {
+                this.$refs.forest.innerHTML = renderForest(results, this.testType);
+                const tbl = renderTableHTML(results, alpha, tail, this.testType);
+                this.$refs.resThead.innerHTML = tbl.thead;
+                this.$refs.resTbody.innerHTML = tbl.tbody;
+                this.$refs.formula.innerHTML = renderFormulaHTML(alpha, tail, this.testType, this.correction);
+                this.$refs.results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+
+            trackEvent('run_test');
+        },
+
+        downloadTemplate() {
+            let csv, fname;
+            if (this.testType === 'single') {
+                csv = 'metric,x,n,p0\n' + SAMPLE_SINGLE.map(d => `${d.metric},${d.x},${d.n},${d.p0}`).join('\n') + '\n';
+                fname = 'significance-single-sample-template.csv';
+            } else {
+                csv = 'metric,x1,n1,x2,n2\n' + SAMPLE_TWO.map(d => `${d.metric},${d.x1},${d.n1},${d.x2},${d.n2}`).join('\n') + '\n';
+                fname = 'significance-two-sample-template.csv';
+            }
+            const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = fname; a.click();
+            URL.revokeObjectURL(url);
+        },
+
+        downloadResults() {
+            if (!this.lastRun || !this.lastRun.results.length) { this.errorList = ['请先运行检验后再下载结果']; return; }
+            const { results, alpha, tail, correction, testType: tt } = this.lastRun;
+            const tailTxt = { two: '双侧', greater: '右侧', less: '左侧' }[tail];
+            const ciPct = ((1 - alpha) * 100).toFixed(0);
+            const corrected = correction !== 'none';
+            const pct = v => (v * 100).toFixed(2) + '%';
+            const sigTxt = r => r.sig ? (r.est > 0 ? '显著↑' : '显著↓') : '不显著';
+            const rows = [];
+            if (tt === 'single') {
+                const head = ['指标', '成功数x', '样本量n', '观测比例p_hat', '基准p0', '差异', `CI下限(${ciPct}%)`, `CI上限(${ciPct}%)`, 'OR', 'z值', 'p值'];
+                if (corrected) head.push('校正后p');
+                head.push('事后功效', '结论');
+                rows.push(head);
+                results.forEach(r => {
+                    const or = calcOR(r.phat, r.p0);
+                    const row = [r.metric, r.raw.x, r.raw.n, pct(r.phat), pct(r.p0), pct(r.est), pct(r.ciLow), pct(r.ciHigh), fmtOR(or), r.z.toFixed(4), r.p.toExponential(4)];
+                    if (corrected) row.push(r.pAdj.toExponential(4));
+                    row.push(fmtPower(r.power), sigTxt(r));
+                    rows.push(row);
+                });
+            } else {
+                const head = ['指标', 'A成功数x1', 'A样本量n1', 'B成功数x2', 'B样本量n2', 'A比例', 'B比例', '差异(A-B)', `CI下限(${ciPct}%)`, `CI上限(${ciPct}%)`, 'OR(B/A)', 'z值', 'p值'];
+                if (corrected) head.push('校正后p');
+                head.push('事后功效', '结论');
+                rows.push(head);
+                results.forEach(r => {
+                    const or = calcOR(r.p2, r.p1);
+                    const row = [r.metric, r.raw.x1, r.raw.n1, r.raw.x2, r.raw.n2, pct(r.p1), pct(r.p2), pct(r.est), pct(r.ciLow), pct(r.ciHigh), fmtOR(or), r.z.toFixed(4), r.p.toExponential(4)];
+                    if (corrected) row.push(r.pAdj.toExponential(4));
+                    row.push(fmtPower(r.power), sigTxt(r));
+                    rows.push(row);
+                });
+            }
+            rows.push([]);
+            rows.push(['# 检验类型', tt === 'single' ? '单样本z比例检验' : '双样本z比例检验']);
+            rows.push(['# 显著性水平α', alpha]);
+            rows.push(['# 检验方向', tailTxt]);
+            rows.push(['# 置信度', ciPct + '%']);
+            rows.push(['# 多重比较校正', CORRECTION_NAMES[correction]]);
+            rows.push(['# 导出时间', new Date().toLocaleString('zh-CN')]);
+            const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '').replace(/-/g, '');
+            saveCsv(rows, `significance-result-${tt}-${stamp}.csv`);
+            trackEvent('download_result');
+        },
+
+        handleDrop(e) {
+            const f = e.dataTransfer.files[0];
+            if (f) this.readFile(f);
+        },
+
+        handleFileSelect(e) {
+            if (e.target.files[0]) this.readFile(e.target.files[0]);
+            e.target.value = '';
+        },
+
+        readFile(file) {
+            if (!/\.csv$/i.test(file.name)) { this.csvStatus = { msg: '请选择 .csv 文件', cls: 'err' }; return; }
+            const reader = new FileReader();
+            reader.onload = e => this.handleCSVImport(e.target.result, file.name);
+            reader.onerror = () => { this.csvStatus = { msg: '文件读取失败', cls: 'err' }; };
+            reader.readAsText(file, 'UTF-8');
+        },
+
+        handleCSVImport(text, fname) {
+            let parsed;
+            try { parsed = parseCSV(text, this.testType); } catch (e) { this.csvStatus = { msg: 'CSV 解析失败：' + e.message, cls: 'err' }; return; }
+            if (!parsed.length) { this.csvStatus = { msg: '未在文件中找到有效数据行', cls: 'err' }; return; }
+            this.rows = parsed.map(d => ({
+                metric: d.metric || '',
+                x: d.x != null ? String(d.x) : '',
+                n: d.n != null ? String(d.n) : '',
+                p0: d.p0 != null ? String(d.p0) : '',
+                x1: d.x1 != null ? String(d.x1) : '',
+                n1: d.n1 != null ? String(d.n1) : '',
+                x2: d.x2 != null ? String(d.x2) : '',
+                n2: d.n2 != null ? String(d.n2) : '',
+            }));
+            this.csvStatus = { msg: `已从 ${fname || 'CSV'} 导入 ${parsed.length} 行数据`, cls: 'ok' };
+            this.$nextTick(() => this.runTest());
+        },
+    };
 }
-
-// ====== CSV 模板下载 ======
-function downloadTemplate() {
-    let csv, fname;
-    if (testType === 'single') {
-        csv = 'metric,x,n,p0\n' + SAMPLE_SINGLE.map(d => `${d.metric},${d.x},${d.n},${d.p0}`).join('\n') + '\n';
-        fname = 'significance-single-sample-template.csv';
-    } else {
-        csv = 'metric,x1,n1,x2,n2\n' + SAMPLE_TWO.map(d => `${d.metric},${d.x1},${d.n1},${d.x2},${d.n2}`).join('\n') + '\n';
-        fname = 'significance-two-sample-template.csv';
-    }
-    const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = fname; a.click();
-    URL.revokeObjectURL(url);
-}
-
-// ====== UI 切换 ======
-function switchTest(t) {
-    testType = t;
-    document.querySelectorAll('.scenario-btn').forEach(b => {
-        const selected = b.dataset.test === t;
-        b.classList.toggle('active', selected);
-        b.setAttribute('aria-selected', selected ? 'true' : 'false');
-    });
-    document.getElementById('test-badge').textContent = t === 'single' ? '📍 单样本 z 比例检验' : '⚖️ 双样本 z 比例检验';
-    document.getElementById('single-baseline-group').style.display = t === 'single' ? 'flex' : 'none';
-    updateParamInfo();
-    updateDzHint();
-    renderHead();
-    clearRows();
-}
-
-function updateParamInfo() {
-    const el = document.getElementById('param-info');
-    let base;
-    if (testType === 'single') {
-        base = '<strong>💡 单样本检验：</strong>将每个指标的观测比例 p̂ = x/n 与基准比例 p₀ 比较，判断差异是否显著。CSV 列：<code>metric, x, n, p0</code>（p₀ 为百分数，可留空使用默认值）。';
-    } else {
-        base = '<strong>💡 双样本检验：</strong>比较两组（A/B）独立比例 p̂₁、p̂₂ 是否存在显著差异。CSV 列：<code>metric, x1, n1, x2, n2</code>。';
-    }
-    const corrEl = document.getElementById('correction');
-    const corr = corrEl ? corrEl.value : 'none';
-    if (corr !== 'none') {
-        base += `<br><strong>🔬 已启用 ${CORRECTION_NAMES[corr]} 校正：</strong>多指标同时检验时整体误报率会膨胀，将基于<strong>校正后 p 值</strong>判定显著性。`;
-    }
-    el.innerHTML = base;
-}
-
-function updateDzHint() {
-    document.getElementById('dz-hint').textContent = testType === 'single'
-        ? '列格式：metric, x, n, p0'
-        : '列格式：metric, x1, n1, x2, n2';
-}
-
-// ====== 文件拖拽/选择 ======
-function setupDropzone() {
-    const dz = document.getElementById('dropzone');
-    const fileInput = document.getElementById('csv-file');
-    dz.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', e => { if (e.target.files[0]) readFile(e.target.files[0]); fileInput.value = ''; });
-    ['dragenter', 'dragover'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dragover'); }));
-    ['dragleave', 'drop'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.remove('dragover'); }));
-    dz.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) readFile(f); });
-}
-
-function readFile(file) {
-    if (!/\.csv$/i.test(file.name)) { setCsvStatus('请选择 .csv 文件', 'err'); return; }
-    const reader = new FileReader();
-    reader.onload = e => handleCSVText(e.target.result, file.name);
-    reader.onerror = () => setCsvStatus('文件读取失败', 'err');
-    reader.readAsText(file, 'UTF-8');
-}
-
-
-document.addEventListener('DOMContentLoaded', () => {
-    updateParamInfo();
-    updateDzHint();
-    renderHead();
-    addRow();
-    setupDropzone();
-});
 </script>
 <script src="../../assets/changelog.js" data-page="significance-test" data-base="../../"></script>
 </body>
